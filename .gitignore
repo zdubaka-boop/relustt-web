@@ -3,3 +3,6 @@
 .DS_Store
 Thumbs.db
 sm.xml
+.env*
+!.env.example
+supabase/.temp/

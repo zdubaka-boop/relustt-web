@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#070713" />
+  <title>Activate RELUSTT</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="access.css?v=1" />
+</head>
+<body>
+  <main class="access-shell">
+    <section class="access-card">
+      <a class="access-logo" href="/" aria-label="RELUSTT home">
+        <img src="logo.png" alt="RELUSTT" />
+      </a>
+
+      <div class="activation-form" id="activationForm">
+        <div class="access-orb" aria-hidden="true">✓</div>
+        <p class="access-eyebrow">Payment complete</p>
+        <h1 class="access-title">Connect your access.</h1>
+        <p class="access-copy">Choose how you’ll sign in to RELUSTT. Use the same option in the iPhone app and your active subscription will unlock automatically.</p>
+        <div class="access-actions">
+          <button class="access-button access-button--apple" type="button" data-provider="apple">
+            <svg class="provider-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M16.5 1.5c.1 1.2-.4 2.3-1.1 3.1-.8.9-2 1.6-3.1 1.5-.1-1.2.5-2.4 1.2-3.1.8-.9 2.1-1.5 3-1.5zM20 17.3c-.5 1.2-.8 1.7-1.5 2.7-1 1.4-2.3 3.2-4 3.2-1.5 0-1.9-1-3.9-1-2 0-2.5 1-4 1-1.7 0-2.9-1.6-3.9-3-2.8-3.9-3.1-8.5-1.4-11 1.2-1.8 3.2-2.9 5-2.9 1.9 0 3.1 1 4.7 1 1.5 0 2.4-1 4.6-1 1.6 0 3.4.9 4.6 2.4-4 2.2-3.4 7.9.8 8.6z"/></svg>
+            Continue with Apple
+          </button>
+          <button class="access-button access-button--google" type="button" data-provider="google">
+            <svg class="provider-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.8 12.2c0-.7-.1-1.5-.2-2.2H12v4.1h5.5a4.7 4.7 0 0 1-2 3.1v2.7h3.3c1.9-1.8 3-4.4 3-7.7z"/><path fill="#34A853" d="M12 22c2.7 0 5-.9 6.7-2.4l-3.3-2.7c-.9.6-2.1 1-3.4 1-2.6 0-4.8-1.8-5.6-4.2H3v2.8A10 10 0 0 0 12 22z"/><path fill="#FBBC05" d="M6.4 13.7a6 6 0 0 1 0-3.4V7.5H3a10 10 0 0 0 0 9l3.4-2.8z"/><path fill="#EA4335" d="M12 6.1c1.5 0 2.8.5 3.8 1.5l2.9-2.8A9.7 9.7 0 0 0 3 7.5l3.4 2.8C7.2 7.9 9.4 6.1 12 6.1z"/></svg>
+            Continue with Google
+          </button>
+        </div>
+        <p class="access-note">This login securely connects the purchase to you. No social profile information is made public.</p>
+      </div>
+
+      <div class="activation-success" id="activationSuccess">
+        <div class="access-orb" aria-hidden="true">🔓</div>
+        <p class="access-eyebrow">Access connected</p>
+        <h1 class="access-title">You’re in.</h1>
+        <p class="access-copy">Download or open RELUSTT, choose the same sign-in method, and your plan will unlock automatically.</p>
+        <div class="access-actions">
+          <a class="access-button access-button--primary" href="relustt://access-ready">Open RELUSTT →</a>
+          <a class="access-button access-button--google" href="https://apps.apple.com/lt/app/quit-lust-relust/id6757361018">Download from the App Store</a>
+        </div>
+      </div>
+
+      <p class="access-message" id="activationMessage" role="alert"></p>
+    </section>
+  </main>
+  <script type="module" src="activate.js?v=1"></script>
+</body>
+</html>

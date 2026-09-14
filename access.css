@@ -1,0 +1,206 @@
+:root {
+  --ink: #070713;
+  --panel: rgba(255, 255, 255, 0.065);
+  --stroke: rgba(255, 255, 255, 0.13);
+  --muted: rgba(255, 255, 255, 0.62);
+  --violet: #9b68ff;
+  --cyan: #51c7ff;
+  --mint: #4be5ac;
+}
+
+* { box-sizing: border-box; }
+
+html, body { min-height: 100%; }
+
+body {
+  margin: 0;
+  color: #fff;
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(112, 63, 201, 0.38), transparent 38rem),
+    radial-gradient(circle at 90% 100%, rgba(34, 149, 183, 0.16), transparent 32rem),
+    var(--ink);
+}
+
+body::before {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  opacity: 0.4;
+  background-image:
+    radial-gradient(circle at 12% 20%, rgba(255,255,255,.6) 0 1px, transparent 1.4px),
+    radial-gradient(circle at 72% 14%, rgba(255,255,255,.35) 0 1px, transparent 1.4px),
+    radial-gradient(circle at 42% 76%, rgba(255,255,255,.3) 0 1px, transparent 1.4px),
+    radial-gradient(circle at 88% 62%, rgba(255,255,255,.45) 0 1px, transparent 1.4px);
+  background-size: 320px 280px, 390px 340px, 440px 400px, 360px 300px;
+}
+
+.access-shell {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  min-height: 100vh;
+  padding: max(28px, env(safe-area-inset-top)) 20px max(28px, env(safe-area-inset-bottom));
+}
+
+.access-card {
+  width: min(100%, 560px);
+  margin: auto;
+  text-align: center;
+}
+
+.access-logo {
+  display: inline-flex;
+  margin-bottom: clamp(42px, 9vh, 86px);
+}
+
+.access-logo img { width: 142px; height: auto; }
+
+.access-orb {
+  display: grid;
+  width: 118px;
+  height: 118px;
+  margin: 0 auto 30px;
+  place-items: center;
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 999px;
+  background: linear-gradient(145deg, var(--violet), #5730ec 50%, var(--cyan));
+  box-shadow: 0 0 70px rgba(140, 86, 255, .42), inset 0 1px rgba(255,255,255,.3);
+  font-size: 45px;
+}
+
+.access-eyebrow {
+  margin: 0 0 14px;
+  color: var(--cyan);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+}
+
+.access-title {
+  margin: 0;
+  font-size: clamp(42px, 8vw, 68px);
+  font-weight: 850;
+  letter-spacing: -.055em;
+  line-height: .98;
+}
+
+.access-copy {
+  max-width: 470px;
+  margin: 22px auto 34px;
+  color: var(--muted);
+  font-size: clamp(17px, 3vw, 20px);
+  line-height: 1.55;
+}
+
+.plan-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 34px 0 18px;
+}
+
+.plan-option {
+  min-height: 112px;
+  padding: 22px 18px;
+  color: #fff;
+  border: 1px solid var(--stroke);
+  border-radius: 24px;
+  background: var(--panel);
+  cursor: pointer;
+  font: inherit;
+  font-size: 18px;
+  font-weight: 750;
+  transition: transform .18s ease, border-color .18s ease, background .18s ease;
+}
+
+.plan-option:hover { transform: translateY(-2px); }
+
+.plan-option.is-selected {
+  border-color: var(--violet);
+  background: linear-gradient(145deg, rgba(155,104,255,.27), rgba(81,199,255,.12));
+  box-shadow: inset 0 0 0 1px rgba(155,104,255,.35), 0 18px 50px rgba(83,48,236,.18);
+}
+
+.access-actions { display: grid; gap: 12px; }
+
+.access-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 62px;
+  padding: 16px 20px;
+  border: 0;
+  border-radius: 999px;
+  color: #11111b;
+  background: #fff;
+  box-shadow: 0 15px 50px rgba(110, 65, 255, .22);
+  cursor: pointer;
+  font: inherit;
+  font-size: 17px;
+  font-weight: 800;
+  text-decoration: none;
+  transition: transform .18s ease, opacity .18s ease;
+}
+
+.access-button:hover { transform: translateY(-2px); }
+.access-button:disabled { cursor: wait; opacity: .55; transform: none; }
+
+.access-button--primary {
+  color: #fff;
+  background: linear-gradient(90deg, var(--violet), #6532ee);
+}
+
+.access-button--apple { background: #fff; }
+
+.access-button--google {
+  color: #fff;
+  border: 1px solid var(--stroke);
+  background: rgba(255,255,255,.07);
+}
+
+.provider-icon {
+  width: 22px;
+  height: 22px;
+  margin-right: 12px;
+}
+
+.access-note {
+  margin: 18px auto 0;
+  color: rgba(255,255,255,.42);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.access-message {
+  display: none;
+  margin: 18px 0 0;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 115, 135, .3);
+  border-radius: 16px;
+  color: #ffc2cb;
+  background: rgba(255, 70, 100, .1);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.access-message.is-visible { display: block; }
+.access-message.is-success {
+  border-color: rgba(75, 229, 172, .34);
+  color: #9ff5d3;
+  background: rgba(75, 229, 172, .1);
+}
+
+.activation-success { display: none; }
+.activation-success.is-visible { display: block; }
+.activation-form.is-hidden { display: none; }
+
+@media (max-width: 540px) {
+  .access-card { align-self: stretch; display: flex; flex-direction: column; justify-content: center; }
+  .access-logo { margin-bottom: 44px; }
+  .plan-grid { grid-template-columns: 1fr; }
+  .plan-option { min-height: 82px; }
+}

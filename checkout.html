@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#070713" />
+  <title>Choose your RELUSTT plan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="access.css?v=1" />
+</head>
+<body>
+  <main class="access-shell">
+    <section class="access-card">
+      <a class="access-logo" href="/" aria-label="RELUSTT home">
+        <img src="logo.png" alt="RELUSTT" />
+      </a>
+      <div class="access-orb" aria-hidden="true">🛡️</div>
+      <p class="access-eyebrow">Your private reset</p>
+      <h1 class="access-title">Choose your plan.</h1>
+      <p class="access-copy">Complete checkout securely, then connect your purchase with Apple or Google to unlock the app.</p>
+
+      <div class="plan-grid" aria-label="Subscription plans">
+        <button class="plan-option is-selected" type="button" data-plan="yearly">
+          <span id="yearlyLabel">Yearly plan</span>
+        </button>
+        <button class="plan-option" type="button" data-plan="monthly">
+          <span id="monthlyLabel">Monthly plan</span>
+        </button>
+      </div>
+
+      <div class="access-actions">
+        <button class="access-button access-button--primary" id="checkoutButton" type="button">Continue to secure checkout →</button>
+      </div>
+      <p class="access-note">Payment is handled securely by Stripe. Your RELUSTT account is created after checkout.</p>
+      <p class="access-message" id="checkoutMessage" role="alert"></p>
+    </section>
+  </main>
+  <script src="checkout.js?v=1" defer></script>
+</body>
+</html>
