@@ -17,6 +17,7 @@ Plain HTML/CSS/JS. No build step, no dependencies, no framework.
 | `og.png` | 1200×630 social share image (OG / Twitter card) |
 | `favicon.png`, `apple-touch-icon.png` | Icons, generated from `logo.png` |
 | `robots.txt`, `sitemap.xml` | Crawl directives; sitemap lists the single page |
+| `pages/src/*.md` | Standalone pages (About / Privacy / Terms) → `/about`, `/privacy`, `/terms` |
 | `blog/src/*.md` | Blog posts — markdown with YAML front matter (title, slug, description, date, faq) |
 | `build_blog.py` | Generates `blog/*.html`, `blog/index.html`, and rewrites `sitemap.xml` from `blog/src` |
 | `blog.css` | Article layout; loads after `styles.css` and reuses its tokens/topbar/footer |
@@ -70,7 +71,8 @@ The `.vercel/` directory holds the project link and is intentionally gitignored 
 
 ## Known gaps
 
-- Footer **Privacy Policy** and **Terms & Conditions** links are `href="#"` placeholders. The App Store listing requires a working privacy policy URL.
+- `support@relustt.site` is referenced on About / Privacy / Terms but **the mailbox does not exist yet** — set up forwarding at the registrar (GoDaddy) or the address is a dead end, which is a GDPR problem.
+- Privacy Policy describes the AI coach sending messages off-device and lists analytics/crash reporting. **Confirm this matches what the app actually does** before relying on it.
 - Footer TikTok / Instagram / X icons are `href="#"` placeholders — handles not yet decided.
 
 ## SEO

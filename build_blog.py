@@ -40,6 +40,9 @@ FOOTER = f'''<footer class="footer">
     <nav class="footer__nav">
       <a href="/">Home</a>
       <a href="/blog">Blog</a>
+      <a href="/about">About</a>
+      <a href="/privacy">Privacy Policy</a>
+      <a href="/terms">Terms &amp; Conditions</a>
       <a href="/#faq">Help</a>
     </nav>
     <div class="footer__social">
@@ -94,19 +97,58 @@ def head(title, desc, url, ld, og_title=None):
 </script>'''
 
 
-def load_posts():
+def load_docs(src_dir):
     posts = []
-    for path in sorted(glob.glob(os.path.join(SRC, "*.md"))):
+    for path in sorted(glob.glob(os.path.join(src_dir, "*.md"))):
         raw = io.open(path, encoding="utf-8").read()
         m = re.match(r"^---\n(.*?)\n---\n(.*)$", raw, re.S)
         meta = yaml.safe_load(m.group(1)); body = m.group(2)
+        meta.setdefault("prefix", "")
         meta["body_md"] = body
         meta["words"] = len(re.findall(r"\w+", body))
         meta["minutes"] = max(1, round(meta["words"] / 220))
-        meta["url"] = f"{SITE}/blog/{meta['slug']}"
+        meta["url"] = f"{SITE}/{meta['prefix']}{meta['slug']}" if meta.get("prefix") else f"{SITE}/{meta['slug']}"
         posts.append(meta)
     posts.sort(key=lambda p: (p["date"], p["slug"]), reverse=True)
     return posts
+
+
+def render_page(p):
+    """Standalone page (About / Privacy / Terms) — no date line, no FAQ, no related."""
+    md = markdown.Markdown(extensions=["extra"])
+    body_html = md.convert(p["body_md"])
+    ld = {"@context": "https://schema.org", "@graph": [
+        {"@type": "WebPage", "@id": p["url"] + "#page", "name": p["title"], "description": p["description"],
+         "url": p["url"], "dateModified": str(p.get("updated", p["date"])),
+         "isPartOf": {"@type": "WebSite", "url": SITE + "/", "name": "Relustt"},
+         "publisher": {"@type": "Organization", "name": "Relustt", "url": SITE + "/"}},
+        {"@type": "BreadcrumbList", "itemListElement": [
+            {"@type": "ListItem", "position": 1, "name": "Home", "item": SITE + "/"},
+            {"@type": "ListItem", "position": 2, "name": p["title"], "item": p["url"]}]}]}
+    updated = p.get("updated", p["date"])
+    updated = updated.strftime("%B %d, %Y") if hasattr(updated, "strftime") else str(updated)
+    stamp = "" if p.get("no_stamp") else f'<p class="post__meta">Last updated {updated}</p>'
+    return f'''<!doctype html>
+<html lang="en">
+<head>
+{head(p["title"] + " | Relustt", p["description"], p["url"], ld)}
+</head>
+<body class="blog">
+{TOPBAR}
+<main class="post">
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> › {html.escape(p["title"])}</nav>
+  <header class="post__head">
+    <h1>{html.escape(p["title"])}</h1>
+    {stamp}
+  </header>
+  <article class="post__body">
+{body_html}
+  </article>
+</main>
+{FOOTER}
+</body>
+</html>
+'''
 
 
 def render_post(p, all_posts):
@@ -198,9 +240,10 @@ def render_index(posts):
 '''
 
 
-def write_sitemap(posts):
+def write_sitemap(posts, pages):
     urls = [(SITE + "/", TODAY, "weekly", "1.0"), (SITE + "/blog", TODAY, "weekly", "0.8")]
     urls += [(p["url"], str(p.get("updated", p["date"])), "monthly", "0.7") for p in posts]
+    urls += [(p["url"], str(p.get("updated", p["date"])), "yearly", "0.3") for p in pages]
     body = "".join(f"  <url>\n    <loc>{u}</loc>\n    <lastmod>{d}</lastmod>\n    <changefreq>{c}</changefreq>\n"
                    f"    <priority>{pr}</priority>\n  </url>\n" for u, d, c, pr in urls)
     io.open(os.path.join(ROOT, "sitemap.xml"), "w", encoding="utf-8", newline="\n").write(
@@ -208,11 +251,16 @@ def write_sitemap(posts):
 
 
 if __name__ == "__main__":
-    posts = load_posts()
+    posts = load_docs(SRC)
+    for p in posts: p["prefix"] = "blog/"; p["url"] = f"{SITE}/blog/{p['slug']}"
+    pages = load_docs(os.path.join(ROOT, "pages", "src"))
     os.makedirs(OUT, exist_ok=True)
     for p in posts:
         io.open(os.path.join(OUT, p["slug"] + ".html"), "w", encoding="utf-8", newline="\n").write(render_post(p, posts))
         print(f"  {p['slug']}.html  ({p['words']} words)")
     io.open(os.path.join(OUT, "index.html"), "w", encoding="utf-8", newline="\n").write(render_index(posts))
-    write_sitemap(posts)
-    print(f"built {len(posts)} posts + index; sitemap.xml has {len(posts) + 2} urls")
+    for p in pages:
+        io.open(os.path.join(ROOT, p["slug"] + ".html"), "w", encoding="utf-8", newline="\n").write(render_page(p))
+        print(f"  {p['slug']}.html  ({p['words']} words)")
+    write_sitemap(posts, pages)
+    print(f"built {len(posts)} posts + index + {len(pages)} pages; sitemap.xml has {len(posts) + len(pages) + 2} urls")
