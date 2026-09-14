@@ -18,7 +18,7 @@ We built a product people use in the most private part of their lives. That shap
 
 ## Who we are
 
-Relustt is operated as an independent app business. For any privacy question, or to exercise any right described below, contact **support@relustt.site**.
+Relustt is operated as an independent app business. For any privacy question, or to exercise any right described below, contact **z.dubaka@gmail.com**.
 
 For the purposes of the EU General Data Protection Regulation (GDPR), we act as the data controller for the information described here.
 
@@ -106,7 +106,7 @@ Wherever you live, you can ask us to:
 
 If you are in the EU/EEA or the UK, these are your GDPR rights and you also have the right to complain to your local data protection authority. If you are in California, you have equivalent rights under the CCPA/CPRA, including the right not to be discriminated against for exercising them.
 
-Email **support@relustt.site** and we will respond within 30 days.
+Email **z.dubaka@gmail.com** and we will respond within 30 days.
 
 ## Security
 
@@ -126,4 +126,4 @@ If we make a material change to this policy, we will update the date below and, 
 
 ## Contact
 
-**support@relustt.site**
+**z.dubaka@gmail.com**

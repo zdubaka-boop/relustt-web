@@ -42,7 +42,7 @@ Every article follows the same rules:
 
 ## Contact
 
-Questions, corrections, press, or a problem with your subscription: **support@relustt.site**
+Questions, corrections, press, or a problem with your subscription: **z.dubaka@gmail.com**
 
 If you've found something on this site that's inaccurate or misleading, tell us. We'll fix it.
 

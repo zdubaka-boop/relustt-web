@@ -71,7 +71,7 @@ The `.vercel/` directory holds the project link and is intentionally gitignored 
 
 ## Known gaps
 
-- `support@relustt.site` is referenced on About / Privacy / Terms but **the mailbox does not exist yet** — set up forwarding at the registrar (GoDaddy) or the address is a dead end, which is a GDPR problem.
+- Contact address on About / Privacy / Terms is a personal Gmail. Swap to a `@relustt.site` alias once mail forwarding is set up at GoDaddy.
 - Privacy Policy describes the AI coach sending messages off-device and lists analytics/crash reporting. **Confirm this matches what the app actually does** before relying on it.
 - Footer TikTok / Instagram / X icons are `href="#"` placeholders — handles not yet decided.
 

@@ -23,7 +23,7 @@ You must be **18 or older** to use Relustt. By using it you confirm that you are
 
 ## 3. Your account
 
-You are responsible for keeping your account credentials secure and for activity that happens under your account. Tell us promptly at support@relustt.site if you believe your account has been compromised.
+You are responsible for keeping your account credentials secure and for activity that happens under your account. Tell us promptly at z.dubaka@gmail.com if you believe your account has been compromised.
 
 You agree not to:
 
@@ -48,7 +48,7 @@ If we change subscription pricing, the change applies to future billing periods,
 
 ## 5. Refunds
 
-We offer a **7-day risk-free guarantee**. If Relustt isn't working for you, contact **support@relustt.site** within 7 days of your purchase and we will help you obtain a full refund.
+We offer a **7-day risk-free guarantee**. If Relustt isn't working for you, contact **z.dubaka@gmail.com** within 7 days of your purchase and we will help you obtain a full refund.
 
 Because Apple processes payments, refunds are ultimately issued by Apple through their refund process. We will assist you in requesting one. You may also request a refund directly from Apple at any time under their standard policy.
 
@@ -102,4 +102,4 @@ These terms are governed by the laws of the Republic of Lithuania, and the court
 
 ## 15. Contact
 
-**support@relustt.site**
+**z.dubaka@gmail.com**
