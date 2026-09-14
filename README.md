@@ -1,7 +1,7 @@
 # Relustt — marketing site
 
 Static landing page for **Relustt**, an iOS app for quitting porn.
-Live: deployed on Vercel (project `rostweb`). Drives traffic to the App Store listing.
+**Live: https://relustt.site** — deployed on Vercel (project `rostweb`; the `rostweb.vercel.app` subdomain also resolves to the same deployment). Drives traffic to the App Store listing.
 
 ## Stack
 
@@ -43,3 +43,4 @@ The `.vercel/` directory holds the project link and is intentionally gitignored 
 ## Known gaps
 
 - Footer **Privacy Policy** and **Terms & Conditions** links are `href="#"` placeholders. The App Store listing requires a working privacy policy URL.
+- No `<link rel="canonical">` and no Open Graph tags (`og:title`, `og:description`, `og:image`). Shared links render with no preview card, which matters because traffic comes from social.
