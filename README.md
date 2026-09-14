@@ -14,6 +14,9 @@ Plain HTML/CSS/JS. No build step, no dependencies, no framework.
 | `script.js` | Starfield canvas, scroll reveal, stat counters, FAQ accordion |
 | `phones/` | App screenshots used in device mockups |
 | `trees/` | Progress-tree illustrations |
+| `og.png` | 1200×630 social share image (OG / Twitter card) |
+| `favicon.png`, `apple-touch-icon.png` | Icons, generated from `logo.png` |
+| `robots.txt`, `sitemap.xml` | Crawl directives; sitemap lists the single page |
 | `vercel.json` | `cleanUrls`, no trailing slash |
 
 ## Run locally
@@ -43,4 +46,10 @@ The `.vercel/` directory holds the project link and is intentionally gitignored 
 ## Known gaps
 
 - Footer **Privacy Policy** and **Terms & Conditions** links are `href="#"` placeholders. The App Store listing requires a working privacy policy URL.
-- No `<link rel="canonical">` and no Open Graph tags (`og:title`, `og:description`, `og:image`). Shared links render with no preview card, which matters because traffic comes from social.
+- Footer TikTok / Instagram / X icons are `href="#"` placeholders — handles not yet decided.
+
+## SEO
+
+`<head>` carries: keyword title, meta description, canonical, Open Graph + Twitter card, favicon links, and a JSON-LD `@graph` (Organization, WebSite, SoftwareApplication, FAQPage). The FAQPage schema is generated from the `<details>` blocks in the FAQ section — **if you edit an FAQ question or answer, update the JSON-LD to match**, otherwise Google flags the mismatch.
+
+The site is a single page. Organic traffic needs content — see the plan in the repo issues / chat history: add a `/blog` repurposing the TikTok slide decks as articles.
