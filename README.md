@@ -17,6 +17,9 @@ Plain HTML/CSS/JS. No build step, no dependencies, no framework.
 | `og.png` | 1200×630 social share image (OG / Twitter card) |
 | `favicon.png`, `apple-touch-icon.png` | Icons, generated from `logo.png` |
 | `robots.txt`, `sitemap.xml` | Crawl directives; sitemap lists the single page |
+| `blog/src/*.md` | Blog posts — markdown with YAML front matter (title, slug, description, date, faq) |
+| `build_blog.py` | Generates `blog/*.html`, `blog/index.html`, and rewrites `sitemap.xml` from `blog/src` |
+| `blog.css` | Article layout; loads after `styles.css` and reuses its tokens/topbar/footer |
 | `vercel.json` | `cleanUrls`, no trailing slash |
 
 ## Run locally
@@ -34,6 +37,20 @@ Then visit http://localhost:8000
 `index.html` is ordered: hero → pinned scroll reveal (animated stats) → testimonials → trees → benefits card → FAQ → final CTA.
 
 Assets are cache-busted with a query string on the stylesheet link (`styles.css?v=15`) — bump that number when CSS changes, or Vercel's CDN will serve the old file.
+
+## Blog
+
+Posts live in `blog/src/*.md`. To add one: copy an existing file, change the front matter (`slug` becomes the URL: `/blog/<slug>`), write the body, put `{{cta}}` on its own line where the mid-article CTA box should appear, then:
+
+```bash
+python build_blog.py
+```
+
+That regenerates every post, the `/blog` index, and `sitemap.xml`. Needs `pip install markdown pyyaml`. Commit the generated HTML — Vercel serves it as static files, there is no build on their side.
+
+Each post gets Article + BreadcrumbList + FAQPage JSON-LD, canonical, OG tags, a mid-article CTA, an end CTA, and two "read next" links. Internal links between posts use `/blog/<slug>` paths.
+
+Voice: blunt, warm, second person, concrete. No medical jargon, no invented statistics, no shame. Titles use the words people search ("porn", not "gooning").
 
 ## Deploy
 
