@@ -59,3 +59,11 @@ All six existing profiles are reachable on both routes. These remain custom plan
 Answers stay in sessionStorage, with the safe word excluded. No new answers are put in URLs or sent to checkout. This update does not add server-side answer storage or app handoff.
 
 Verification: `tests/funnel-archetypes.test.cjs` covers all six profiles on both routes, branch-independent shared scoring, stale history, unknown answers, and sparse evidence. `tests/funnel-flow.browser.js` covers both complete branches with and without previous attempts plus the concern route. `tests/funnel-shared-questions.browser.js` covers six direct links on both routes at 320/390/1440px, refresh/back/forward, legacy migration, conditional skipping, and a rendered Focus Reclaimer on the performance route. `tests/funnel-analysis.browser.js` checks new shared personalization and legacy fallback through the complete animation.
+
+## Question cut — 2026-09-16
+
+User approved cutting every question that neither scored the archetype nor changed the plan, and interleaving the remaining ones with the existing info screens. Removed: identity-goal, porn-connection, both content-intensity questions, both trend questions, identity-impact, "does anyone know", reclaim-your-time, performance-priority, both tried-to-quit questions and the "are you really that committed" check. Kept: the nine scoring questions, the intimacy fork with its two ED questions, the obstacle question (now shared and asked before its personalized info screen; it also sets quit history), and all product/value screens.
+
+Both routes now share one spine: frequency, motivation, urge context, obstacle + info, control, priority, fork, quit block (feedback before the setback question), support preference + info, blocker catch-up, commitment, features, name. Identity path: 9 questions; performance path: 11. No more than four in a row. `funnel-archetypes.js` is unchanged; shared scoring already ignored the removed answers. Legacy scoring still reads them for older sessions. Result copy that read `performanceGoal`, `identityGoal` or `reclaimedTime` falls back to the shared priority, which is what new sessions supply.
+
+Rollback: `git reset --hard funnel-before-rebuild` on branch `funnel-question-rebuild`.

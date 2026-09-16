@@ -48,7 +48,12 @@
     sessionStorage.removeItem(key);
     await open('step=motivation&path=performance');
     await answer('Relieving stress', 'urge-context');
-    await answer('After a difficult day', 'watch-control');
+    await answer('After a difficult day', 'obstacles');
+    await answer("I've tried and failed before", 'build-your-system');
+    doc().querySelector('#continueButton').click();
+    // The bridge after the obstacle screen advances on its own.
+    for (let i = 0; i < 400 && step() !== 'watch-control'; i++) await new Promise(resolve => setTimeout(resolve, 20));
+    check(step() === 'watch-control', 'Obstacle info and bridge lead to control question');
     await open('step=watch-control&path=performance');
     check(stored().motivation === 'Relieving stress' && stored().urgeContext === 'After a difficult day', 'Answers survive refresh');
     // Continue within the loaded document, then exercise real browser back/forward.
@@ -71,9 +76,9 @@
     results.push('Legacy bookmark and saved-state migration');
     for (const path of ['identity', 'performance']) {
       sessionStorage.setItem(key, JSON.stringify({ pathway: path, triedQuit: 'Yes', setbackTrigger: 'Easy access in the moment', quitProgress: 'On and off' }));
-      await open(`step=${path === 'performance' ? 'performance-quit-history' : 'quit-history'}&path=${path}`);
-      await answer('No', 'quit-feedback');
-      check(stored().setbackTrigger === '' && stored().quitProgress === '', 'Changing history clears stale follow-up answers');
+      await open(`step=obstacles&path=${path}`);
+      await answer("Honestly, I haven't tried", 'build-your-system');
+      check(stored().triedQuit === 'No' && stored().setbackTrigger === '' && stored().quitProgress === '', 'Changing the obstacle to a first attempt clears stale follow-up answers');
       await open(`step=setback-trigger&path=${path}`);
       check(step() === 'quit-feedback', 'First attempt skips setback direct link');
     }

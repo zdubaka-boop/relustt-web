@@ -181,7 +181,7 @@
     for (const concern of ['Yes', 'No']) {
       seed({ screen: 'forkConcern', forkAnswer: "I haven't been intimate with a partner yet" });
       await open('step=intimacy-concern');
-      await answer(concern, concern === 'Yes' ? 'intimacy-worry' : 'identity-goal');
+      await answer(concern, concern === 'Yes' ? 'intimacy-worry' : 'quit-feedback');
       assert(stored().intimacyConcern === concern, 'Explicit concern answer saved');
       await open('step=intimacy-concern');
       assert(doc().querySelector('.option.is-selected')?.dataset.answer === concern, 'Concern answer restored on revisit');

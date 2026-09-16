@@ -887,7 +887,17 @@ body::before { opacity: 0.2; }
 
 .subscription-copy { text-wrap: pretty; }
 
-/* Typed transition beat between an insight screen and the next question. */
+/* Transition beat between an insight screen and the next question. Words settle
+   in on a CSS stagger, then the whole line fades out before the next screen. */
 .bridge-screen { display: flex; min-height: 58vh; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-.bridge-line { max-width: 460px; margin: 0px; color: var(--text); font-size: clamp(22px, 5.4vw, 30px); font-weight: 700; line-height: 1.32; letter-spacing: -0.025em; overflow-wrap: anywhere; }
-.bridge-line .analysis-caret { width: 2px; height: clamp(20px, 5vw, 27px); margin-left: 4px; vertical-align: -4px; }
+.bridge-line { max-width: 460px; margin: 0px; color: var(--text); font-size: clamp(22px, 5.4vw, 30px); font-weight: 700; line-height: 1.32; letter-spacing: -0.025em; overflow-wrap: anywhere; transition: opacity 0.58s ease, filter 0.58s ease, transform 0.58s ease; }
+.bridge-line.is-leaving { opacity: 0; filter: blur(9px); transform: translateY(-6px); }
+.bridge-word { display: inline-block; animation: 0.55s cubic-bezier(0.2, 0.7, 0.25, 1) calc(var(--i) * 85ms) both running bridge-word-in; }
+@keyframes bridge-word-in {
+  0% { opacity: 0; filter: blur(8px); transform: translateY(11px); }
+  100% { opacity: 1; filter: blur(0px); transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bridge-word { animation: none; }
+  .bridge-line { transition: none; }
+}

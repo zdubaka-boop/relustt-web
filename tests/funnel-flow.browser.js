@@ -1,5 +1,8 @@
 // Run through agent-browser eval --stdin in a dedicated LOCAL preview session.
 // This exercises real page handlers and restores the test session's quiz storage.
+// Covers the 2026-09-16 question cut: one shared spine, obstacle doubles as quit
+// history, quit feedback before the setback question, support info for everyone,
+// commitment before features on both paths, and the intimacy-worry route.
 (async () => {
   if (!['localhost', '127.0.0.1'].includes(location.hostname)) throw new Error('Run on a local preview only.');
   const storageKey = 'relustt_web_funnel_v1';
@@ -15,7 +18,8 @@
   const stored = () => JSON.parse(sessionStorage.getItem('relustt_web_funnel_v1') || '{}');
   const assert = (condition, message) => { if (!condition) throw new Error(`${step()}: ${message}`); };
   const wait = async (predicate) => {
-    for (let i = 0; i < 100; i++) {
+    // Long enough for the self-advancing bridge screen.
+    for (let i = 0; i < 400; i++) {
       if (predicate()) return;
       await new Promise(resolve => setTimeout(resolve, 20));
     }
@@ -36,18 +40,6 @@
     button.click();
     await wait(() => step() === next);
   };
-  const firstAnswer = async next => {
-    const label = doc().querySelector('[data-answer]').dataset.answer;
-    await answer(label, next);
-  };
-  const sharedQuestions = async () => {
-    await answer('Daily', 'motivation');
-    await answer('Sexual pleasure', 'urge-context');
-    await answer('It varies', 'watch-control');
-    await answer('Rarely', 'main-priority');
-    await answer('Confidence in intimacy', 'intimacy');
-    assert(stored().changePriority === 'Confidence in intimacy', 'Shared goal saved before the fork');
-  };
   const input = (selector, value) => {
     const field = doc().querySelector(selector);
     field.value = value;
@@ -57,6 +49,37 @@
     assert(!doc().querySelector('#backButton'), 'Information screens have no Back control');
     await click('#continueButton', next);
   };
+  const questionsInARow = () => {
+    // Longest run of consecutive question screens in the recorded history.
+    const questionScreens = new Set(['frequency', 'motivation', 'urgeContext', 'obstacle', 'watchControl', 'changePriority', 'fork', 'forkConcern', 'bRelationshipImpact', 'bIntensity', 'quitProgress', 'setbackTrigger', 'supportPreference']);
+    let longest = 0, run = 0;
+    for (const screen of stored().history) { run = questionScreens.has(screen) ? run + 1 : 0; longest = Math.max(longest, run); }
+    return longest;
+  };
+  const sharedSpine = async (obstacle) => {
+    await answer('Daily', 'motivation');
+    await answer('Sexual pleasure', 'urge-context');
+    await answer('It varies', 'obstacles');
+    await answer(obstacle, 'build-your-system');
+    assert(stored().obstacle === obstacle, 'Obstacle saved');
+    await info('personalizing');
+    await wait(() => step() === 'watch-control');
+    assert(!doc().querySelector('#backButton') || stored().history.at(-1) !== 'obstacleBridge', 'Bridge replaces its own route');
+    await answer('Rarely', 'main-priority');
+    await answer('Confidence in intimacy', 'intimacy');
+    assert(stored().changePriority === 'Confidence in intimacy', 'Shared goal saved before the fork');
+  };
+  const quitBlock = async (triedQuit) => {
+    if (triedQuit === 'Yes') {
+      await answer('On and off', 'quit-feedback');
+      await info('setback-trigger');
+      await answer('One setback makes me give up', 'support-preference');
+    } else {
+      assert(doc().querySelector('h1').textContent.includes('This is where you start'), 'First attempt gets the starting-point feedback');
+      await info('blocker-introduction');
+      await setupBlocker('support-preference');
+    }
+  };
   const setupBlocker = async next => {
     assert(step() === 'blocker-introduction', 'Blocker introduction appears at correct stage');
     await info('safe-word');
@@ -65,6 +88,20 @@
     await info(next);
     assert(!sessionStorage.getItem('relustt_web_funnel_v1').includes(safeWord), 'Safe word is not persisted');
     assert(!JSON.stringify(win().history.state).includes(safeWord), 'Safe word is not in browser history');
+  };
+  const supportAndBlocker = async (pathway, triedQuit, commitmentSlug) => {
+    await answer('Someone I trust', 'shared-support');
+    assert(doc().querySelector('h1').textContent.includes('Shared weight'), 'Support info reflects trusted-person preference');
+    if (triedQuit === 'Yes') {
+      await info('blocker-introduction');
+      await setupBlocker(commitmentSlug);
+    } else if (pathway === 'performance') {
+      await info('blocker-reminder');
+      assert(doc().querySelector('.safe-word-reminder').textContent === safeWord, 'Reminder recalls in-memory safe word');
+      await info(commitmentSlug);
+    } else {
+      await info(commitmentSlug);
+    }
   };
   const features = async next => {
     const carousel = doc().querySelector('[data-feature-carousel]');
@@ -97,7 +134,7 @@
       await click('#confirmCommitment', next);
     }
   };
-  const finish = async (pathway, goal) => {
+  const finish = async (pathway) => {
     input('#nameInput', 'Test Person');
     await click('#nameContinue', 'pledge');
     assert(doc().querySelector('.vow-copy').textContent.includes('I, Test Person, commit to taking back control starting today.'), 'Pledge uses entered name');
@@ -112,94 +149,57 @@
     assert(text.includes('one-week paid trial') && text.includes('monthly at the crossed-out price shown above') && doc().querySelector('.plan-price-row.bonus s').textContent === '$29.50', 'Paid week and referenced renewal price displayed');
     assert(!text.includes('$0 today') && !text.includes('7 DAYS FREE') && !text.includes('free trial'), 'No free-trial claims');
     assert(doc().querySelector('#checkoutFromFunnel').textContent.includes('Reveal my 90-day plan'), 'Paid plan CTA');
-    if (pathway === 'performance') {
-      assert(stored().performanceGoal === goal, 'Performance goal retained for archetype scoring');
-      assert(['confidence', 'reconnect'].includes(doc().querySelector('.archetype-result').dataset.archetype), 'Performance answers lead to a relevant archetype');
-    } else {
-      assert(doc().querySelector('.archetype-result').dataset.archetype === 'confidence' && /confidence/i.test(doc().querySelector('.archetype-clues').textContent), 'Shared answers personalize the identity result');
-      assert(stored().reclaimedTime === 'Create a business', 'Reclaimed activity retained');
-    }
+    assert(doc().querySelector('.archetype-result').dataset.archetype === 'confidence' && /confidence/i.test(doc().querySelector('.archetype-clues').textContent), 'Shared answers personalize the result on either route');
   };
   try {
     for (const pathway of ['identity', 'performance']) {
       for (const triedQuit of ['Yes', 'No']) {
         await open('start=1');
         await click('#beginFunnel', 'frequency');
-        await sharedQuestions();
+        await sharedSpine(triedQuit === 'Yes' ? "I've tried and failed before" : "Honestly, I haven't tried");
+        assert(stored().triedQuit === triedQuit, 'Obstacle answer sets quit history');
         const score = triedQuit === 'Yes' ? 3 : 8;
+        const commitmentSlug = pathway === 'identity' ? 'identity-commitment' : 'performance-commitment';
         if (pathway === 'identity') {
-          await answer('No', 'identity-goal');
-          await answer('More confident', 'obstacles');
-          await answer("Honestly, I haven't tried", 'build-your-system');
-          await info('content-intensity');
-          await answer('A little', 'quit-history');
-          await answer(triedQuit, triedQuit === 'Yes' ? 'quit-progress' : 'quit-feedback');
-          if (triedQuit === 'Yes') {
-            await answer('On and off', 'quit-feedback');
-            await info('setback-trigger');
-            await answer('One setback makes me give up', 'identity-impact');
-          } else await info('blocker-introduction');
-          if (triedQuit === 'No') await setupBlocker('identity-impact');
-          assert(doc().querySelector('h1').textContent.includes('confidence'), 'A5 is personalized');
-          await firstAnswer('support');
-          await answer(triedQuit === 'Yes' ? 'One person' : 'No one', triedQuit === 'Yes' ? 'habit-trend' : 'shared-support');
-          if (triedQuit === 'No') await info('habit-trend');
-          await answer('Worse', 'reclaim-your-time');
-          await answer('Create a business', 'support-preference');
-          await answer('Someone I trust', triedQuit === 'Yes' ? 'blocker-introduction' : 'identity-commitment');
-          if (triedQuit === 'Yes') await setupBlocker('identity-commitment');
-          await commitment(score, 'progress');
-          await features('recommitment-check');
-          assert(doc().querySelector('h1').textContent.includes(`${score}/10`), 'Recommitment recalls slider value');
-          await answer(triedQuit === 'Yes' ? 'Honestly, not sure' : 'Yes', triedQuit === 'Yes' ? 'start-with-uncertainty' : 'your-name');
-          if (triedQuit === 'Yes') await info('your-name');
-          await finish(pathway);
+          await answer('No', triedQuit === 'Yes' ? 'quit-progress' : 'quit-feedback');
         } else {
           await answer('Yes', 'relationship-impact');
-          await firstAnswer('porn-connection');
-          await answer('Yes', 'brain-conditioning');
+          await answer("Yes, it's affected a relationship", 'brain-conditioning');
           await info('performance-content-intensity');
           await answer('A little', 'arousal-threshold');
-          await info('performance-quit-history');
-          await answer(triedQuit, triedQuit === 'Yes' ? 'performance-quit-progress' : 'quit-feedback');
-          if (triedQuit === 'Yes') {
-            await answer("Good, I've made real progress", 'quit-feedback');
-            await info('setback-trigger');
-            await answer("I haven't returned to it", 'performance-trend');
-          } else await info('blocker-introduction');
-          if (triedQuit === 'No') await setupBlocker('performance-trend');
-          assert(!doc().querySelector('#trendAvoidance'), 'Removed alternative is absent');
-          input('#trendRange', triedQuit === 'No' ? '4' : '0');
-          await click('#continueButton', 'performance-priority');
-          assert(stored().performanceTrendScore === (triedQuit === 'No' ? 'worse' : 'better'), 'B9 scores the selected slider value');
-          const goal = 'Feel closer to my partner';
-          await answer(goal, 'support-preference');
-          await answer('Someone I trust', triedQuit === 'No' ? 'blocker-reminder' : 'blocker-introduction');
-          if (triedQuit === 'Yes') await setupBlocker('progress');
-          else {
-            assert(doc().querySelector('.safe-word-reminder').textContent === safeWord, 'B E1 recalls in-memory safe word');
-            await info('progress');
-          }
-          await features('performance-commitment');
-          await commitment(score, 'your-name');
-          await finish(pathway, goal);
+          await info(triedQuit === 'Yes' ? 'quit-progress' : 'quit-feedback');
         }
+        assert(win().history.state.relustt.pathway === pathway, 'Pathway follows the intimacy answer');
+        await quitBlock(triedQuit);
+        await supportAndBlocker(pathway, triedQuit, commitmentSlug);
+        await commitment(score, 'progress');
+        await features('your-name');
+        assert(questionsInARow() <= 4, `No more than four questions in a row (saw ${questionsInARow()})`);
+        await finish(pathway);
         results.push(`${pathway}: tried quitting ${triedQuit}, commitment ${score} — passed`);
       }
     }
     await open('start=1');
     await click('#beginFunnel', 'frequency');
-    await sharedQuestions();
+    await sharedSpine("I don't know where to start");
+    assert(stored().triedQuit === 'No', 'Not knowing where to start counts as no previous attempt');
     await answer("I haven't been intimate with a partner yet", 'intimacy-concern');
     await answer('Yes', 'intimacy-worry');
     assert(win().history.state.relustt.pathway === 'identity', 'Worry alone stays on the regular path');
     assert(stored().intimacyConcern === 'Yes', 'Concern answer is saved');
-    await click('#continueButton', 'identity-goal');
+    await info('quit-feedback');
     results.push('Intimacy worry shows reassurance, then continues the regular path — passed');
+    await open('step=identity-goal');
+    assert(step() === 'obstacles', 'Removed identity-goal link lands on the obstacle question');
+    await open('step=performance-priority&path=performance');
+    assert(step() === 'support-preference', 'Removed performance-priority link lands on support preference');
+    sessionStorage.setItem(storageKey, JSON.stringify({ screen: 'aTimeUse', pathway: 'identity', history: ['fork', 'aIdentityGoal', 'aTrend'] }));
+    await open('');
+    assert(step() === 'support-preference' && !stored().history.some(screen => screen.startsWith('a')), 'Removed saved screens migrate');
+    results.push('Legacy links and saved screens migrate — passed');
     return { passed: results.length, results };
   } finally {
     frame.remove();
-    if (previousStorage === null) sessionStorage.removeItem(storageKey);
-    else sessionStorage.setItem(storageKey, previousStorage);
+    if (previousStorage === null) sessionStorage.removeItem(storageKey); else sessionStorage.setItem(storageKey, previousStorage);
   }
-})()
+})();

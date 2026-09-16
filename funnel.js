@@ -4,32 +4,41 @@
   const priceTiers = ['5', '9', '13', '17.67'];
   // Stable, shareable routes. Answers and the safe word never belong in URLs.
   const stepSlugs = {
-    welcome: 'welcome', frequency: 'frequency', fork: 'intimacy', forkConcern: 'intimacy-concern', forkConcernInfo: 'intimacy-worry',
-    motivation: 'motivation', urgeContext: 'urge-context', watchControl: 'watch-control', changePriority: 'main-priority',
-    setbackTrigger: 'setback-trigger', supportPreference: 'support-preference',
-    bRelationshipImpact: 'relationship-impact',
-    bPornConnection: 'porn-connection', bCauseInfo: 'brain-conditioning',
+    welcome: 'welcome', frequency: 'frequency', motivation: 'motivation', urgeContext: 'urge-context',
+    obstacle: 'obstacles', obstacleInfo: 'build-your-system', obstacleBridge: 'personalizing',
+    watchControl: 'watch-control', changePriority: 'main-priority',
+    fork: 'intimacy', forkConcern: 'intimacy-concern', forkConcernInfo: 'intimacy-worry',
+    bRelationshipImpact: 'relationship-impact', bCauseInfo: 'brain-conditioning',
     bIntensity: 'performance-content-intensity', bGapInfo: 'arousal-threshold',
-    bTriedQuit: 'performance-quit-history', bQuitProgress: 'performance-quit-progress',
-    quitFeedback: 'quit-feedback', bTrend: 'performance-trend', bPriority: 'performance-priority',
-    aIdentityGoal: 'identity-goal', aObstacle: 'obstacles',
-    aObstacleInfo: 'build-your-system', aObstacleBridge: 'personalizing', aIntensity: 'content-intensity', aTriedQuit: 'quit-history',
-    aQuitProgress: 'quit-progress', aIdentityImpact: 'identity-impact', aSupport: 'support',
-    aSupportInfo: 'shared-support', aTrend: 'habit-trend', aTimeUse: 'reclaim-your-time',
+    quitProgress: 'quit-progress', quitFeedback: 'quit-feedback', setbackTrigger: 'setback-trigger',
+    supportPreference: 'support-preference', supportInfo: 'shared-support',
     safeWordIntro: 'blocker-introduction', safeWordEntry: 'safe-word', blockerLive: 'blocker-ready', blockerReminder: 'blocker-reminder',
     featureProgress: 'progress', featureCommunity: 'community', featureSupport: 'ai-support',
     featureLessons: 'lessons', commitmentPerformance: 'performance-commitment',
     commitmentIdentity: 'identity-commitment', recommitment: 'confirm-commitment',
-    aRecommitment: 'recommitment-check', aRecommitmentInfo: 'start-with-uncertainty',
     name: 'your-name', pledge: 'pledge', planAnalysis: 'analyzing-answers', price: 'choose-price', paywall: 'your-plan',
   };
-  const screensBySlug = new Map(Object.entries(stepSlugs).map(([screen, slug]) => [slug, screen]));
-  screensBySlug.set('anxiety-triggers', 'bTrend');
-  screensBySlug.set('confidence-impact', 'supportPreference');
-  // Keep old bookmarks working without bringing back the duplicate question.
-  screensBySlug.set('performance-experience', 'bRelationshipImpact');
+  // Screens removed by the 2026-09-16 question cut. Old links and saved sessions land on the nearest live step.
+  const legacyScreens = {
+    aObstacle: 'obstacle', aObstacleInfo: 'obstacleInfo', aObstacleBridge: 'obstacleBridge',
+    aQuitProgress: 'quitProgress', bQuitProgress: 'quitProgress', aTriedQuit: 'quitProgress', bTriedQuit: 'quitProgress',
+    aSupportInfo: 'supportInfo', bOccurrence: 'bRelationshipImpact', bPornConnection: 'bCauseInfo',
+    aIdentityGoal: 'obstacle', aIntensity: 'watchControl',
+    aIdentityImpact: 'supportPreference', aSupport: 'supportPreference', aTrend: 'supportPreference', aTimeUse: 'supportPreference',
+    bTrend: 'supportPreference', bPriority: 'supportPreference', bAnxietyTrigger: 'supportPreference', bConfidenceSpill: 'supportPreference',
+    aRecommitment: 'name', aRecommitmentInfo: 'name',
+  };
+  const legacySlugs = {
+    'anxiety-triggers': 'supportPreference', 'confidence-impact': 'supportPreference', 'performance-experience': 'bRelationshipImpact',
+    'porn-connection': 'bCauseInfo', 'identity-goal': 'obstacle', 'content-intensity': 'watchControl',
+    'quit-history': 'quitProgress', 'performance-quit-history': 'quitProgress', 'performance-quit-progress': 'quitProgress',
+    'identity-impact': 'supportPreference', 'support': 'supportPreference', 'habit-trend': 'supportPreference',
+    'reclaim-your-time': 'supportPreference', 'performance-trend': 'supportPreference', 'performance-priority': 'supportPreference',
+    'recommitment-check': 'name', 'start-with-uncertainty': 'name',
+  };
+  const screensBySlug = new Map([...Object.entries(legacySlugs), ...Object.entries(stepSlugs).map(([screen, slug]) => [slug, screen])]);
   const defaults = {
-    screen: 'welcome', history: [], pathway: 'identity', safeWordReturn: 'aIdentityImpact',
+    screen: 'welcome', history: [], pathway: 'identity', safeWordReturn: 'supportPreference',
     frequency: '', performanceExperience: '', relationshipImpact: '', pornConnection: '',
     contentIntensity: '', triedQuit: '', quitProgress: '', anxietyTrigger: '',
     performanceTrend: '', performanceTrendScale: 2, performanceTrendScore: '', performanceGoal: '', confidenceSpill: '', identityGoal: '', forkAnswer: '',
@@ -47,13 +56,11 @@
     try { restored = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || '{}'); } catch {}
   }
   const state = { ...defaults, ...restored, history: Array.isArray(restored.history) ? restored.history : [] };
-  if (state.screen === 'bConfidenceSpill') state.screen = 'supportPreference';
-  state.history = state.history.filter(screen => screen !== 'bConfidenceSpill');
-  if (state.screen === 'bAnxietyTrigger') state.screen = 'bTrend';
-  if (state.safeWordReturn === 'bAnxietyTrigger') state.safeWordReturn = 'bTrend';
-  state.history = state.history.filter(screen => screen !== 'bAnxietyTrigger');
-  if (state.screen === 'bOccurrence') state.screen = 'bRelationshipImpact';
-  state.history = state.history.filter(screen => screen !== 'bOccurrence');
+  const migrateScreen = (screen) => legacyScreens[screen] || screen;
+  state.screen = migrateScreen(state.screen);
+  state.safeWordReturn = migrateScreen(state.safeWordReturn);
+  state.history = state.history.map(migrateScreen)
+    .filter((screen, index, list) => Object.hasOwn(stepSlugs, screen) && screen !== list[index - 1]);
   state.selectedPrice = ({ '14.99': '13', '29.99': '17.67' })[state.selectedPrice] || state.selectedPrice;
   if (!priceTiers.includes(state.selectedPrice)) state.selectedPrice = defaults.selectedPrice;
   // The safe word is deliberately memory-only and never written to browser storage.
@@ -88,7 +95,7 @@
     state.history = matching && Array.isArray(navigation.history)
       ? navigation.history.filter((screen) => Object.hasOwn(stepSlugs, screen)) : [];
     state.safeWordReturn = matching && Object.hasOwn(stepSlugs, navigation.safeWordReturn)
-      ? navigation.safeWordReturn : (state.pathway === 'performance' ? 'bTrend' : 'aIdentityImpact');
+      ? navigation.safeWordReturn : 'supportPreference';
   }
 
   const initialNavigation = window.history.state?.relustt;
@@ -153,17 +160,12 @@
 
   function questionProgressScreens() {
     const usedConcernFollowUp = state.screen === 'forkConcern' || state.history.includes('forkConcern');
-    const screens = ['frequency', 'motivation', 'urgeContext', 'watchControl', 'changePriority', 'fork'];
+    const screens = ['frequency', 'motivation', 'urgeContext', 'obstacle', 'watchControl', 'changePriority', 'fork'];
     if (usedConcernFollowUp) screens.push('forkConcern');
-    if (state.pathway === 'performance') {
-      screens.push('bRelationshipImpact', 'bPornConnection', 'bIntensity', 'bTriedQuit');
-      if (state.triedQuit === 'Yes') screens.push('bQuitProgress', 'setbackTrigger');
-      screens.push('bTrend', 'bPriority', 'supportPreference', 'commitmentPerformance', 'name');
-    } else {
-      screens.push('aIdentityGoal', 'aObstacle', 'aIntensity', 'aTriedQuit');
-      if (state.triedQuit === 'Yes') screens.push('aQuitProgress', 'setbackTrigger');
-      screens.push('aIdentityImpact', 'aSupport', 'aTrend', 'aTimeUse', 'supportPreference', 'commitmentIdentity', 'aRecommitment', 'name');
-    }
+    if (state.pathway === 'performance') screens.push('bRelationshipImpact', 'bIntensity');
+    // Assume prior attempts until the obstacle answer says otherwise, so the total does not grow mid-quiz.
+    if (state.triedQuit !== 'No') screens.push('quitProgress', 'setbackTrigger');
+    screens.push('supportPreference', state.pathway === 'performance' ? 'commitmentPerformance' : 'commitmentIdentity', 'name');
     return screens;
   }
 
@@ -269,31 +271,38 @@
   function showInsight({ eyebrow = '', title, message, takeaway, visual, accent = 'violet', buttonTitle }, onContinue) {
     mount(`<div class="insight-content accent-${accent}"><div class="insight-visual">${insightVisual(visual)}</div>
       ${eyebrow ? `<p class="eyebrow">${escapeHTML(eyebrow)}</p>` : ''}<h1>${escapeHTML(title)}</h1><p class="insight-copy">${escapeHTML(message)}</p>
-      <div class="takeaway"><span aria-hidden="true">◈</span><strong>${escapeHTML(takeaway)}</strong></div>${primaryButton(buttonTitle)}</div>`, { back: false, className: `insight-screen${visual === 'blocker' ? ' blocker-intro-screen' : ''}` });
+      ${takeaway ? `<div class="takeaway"><span aria-hidden="true">◈</span><strong>${escapeHTML(takeaway)}</strong></div>` : ''}${primaryButton(buttonTitle)}</div>`, { back: false, className: `insight-screen${visual === 'blocker' ? ' blocker-intro-screen' : ''}` });
     document.getElementById('continueButton').addEventListener('click', onContinue);
   }
 
   function obstacleInsight() {
-    const goal = state.identityGoal.toLowerCase().replace('more ', '') || 'fully in control';
     const content = {
       "I don't know where to start": { visual: 'map', title: "You don't have to figure it out alone.", message: "That's exactly why you're here. You don't need to know where to start, because we already do. Just follow the plan, one step at a time." },
       "I've tried and failed before": { visual: 'retry', title: "You didn't fail. Willpower did.", message: "Willpower alone was never going to be enough, for anyone. This time you get structure built for the moments that broke you before." },
-      "Honestly, I haven't tried": { visual: 'start', title: "Then let's start now.", message: `You already know what you want: to become ${goal}. This is where that actually starts.` },
+      "Honestly, I haven't tried": { visual: 'start', title: "Then let's start now.", message: 'You already know what you want. This is where that actually starts.' },
     }[state.obstacle] || { visual: 'shield', title: 'This was never really about willpower.', message: "Willpower runs out. That's not a flaw in you, that's how it works for everyone. What works is a system that prevents the urge before it hits." };
-    showInsight({ eyebrow: 'A DIFFERENT WAY FORWARD', ...content, takeaway: 'This is a learned response, and learned responses can change.', accent: 'violet', buttonTitle: 'Build my system' }, () => go('aObstacleBridge'));
+    showInsight({ eyebrow: 'A DIFFERENT WAY FORWARD', ...content, accent: 'violet', buttonTitle: 'Build my system' }, () => go('obstacleBridge'));
   }
 
-  // A short typed beat between screens. It advances on its own and replaces its
-  // own route, so Back skips it instead of replaying the typing in a loop.
+  // A short beat between screens. Words settle in on a CSS stagger rather than a
+  // per-character timer, then the whole line fades to nothing before the next
+  // screen mounts. It replaces its own route, so Back skips it instead of replaying.
+  const WORD_STAGGER = 90;
+  const WORD_SETTLE = 550;
+  // Time the line stays fully settled before it dissolves, scaled to its length.
+  const READ_PER_WORD = 260;
+  const MIN_READ = 2200;
+  const FADE_OUT = 700;
   function showTypedBridge({ line, next }) {
+    const words = line.split(' ');
     mount(`<div class="bridge-screen">
-      <p class="bridge-line" aria-hidden="true"><span id="bridgeText"></span><i class="analysis-caret"></i></p>
+      <p class="bridge-line" id="bridgeLine" aria-hidden="true">${words.map((word, index) => `<span class="bridge-word" style="--i:${index}">${escapeHTML(word)}</span>`).join(' ')}</p>
       <div class="analysis-status" role="status" aria-live="polite">${escapeHTML(line)}</div>
     </div>`, { back: false, className: 'bridge-page' });
-    const output = document.getElementById('bridgeText');
+    const lineElement = document.getElementById('bridgeLine');
     const origin = state.screen;
     const later = (callback, delay) => activeTimers.push(window.setTimeout(() => {
-      if (state.screen === origin && output.isConnected) callback();
+      if (state.screen === origin && lineElement.isConnected) callback();
     }, delay));
     const advance = () => {
       state.screen = next;
@@ -301,39 +310,27 @@
       persist();
       render();
     };
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      output.textContent = line;
-      return later(advance, 1800);
-    }
-    let length = 0;
-    const type = () => {
-      output.textContent = line.slice(0, ++length);
-      if (length < line.length) later(type, 34);
-      else later(advance, 1100);
-    };
-    type();
+    const hold = Math.max(MIN_READ, words.length * READ_PER_WORD);
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return later(advance, hold + 900);
+    const settled = words.length * WORD_STAGGER + WORD_SETTLE;
+    later(() => lineElement.classList.add('is-leaving'), settled + hold);
+    later(advance, settled + hold + FADE_OUT);
   }
 
-  function identityImpactContent() {
-    return {
-      'More confident': { title: 'After doing it, how does it affect your confidence?', options: ['I feel like less of a man', 'A quiet sense of shame lingers', "Honestly, I don't think about it"] },
-      'More present with people': { title: 'After doing it, how does it affect how present you feel with the people around you?', options: ["I don't let people get close because of the shame", 'I feel less interested in connecting with people', "I don't really notice a difference", "Honestly, I don't think about it"] },
-      'More productive': { title: 'After doing it, how does it affect your productivity?', options: ['I feel drained and unmotivated afterward', 'I lose focus for hours afterward', "I don't really notice a difference", "Honestly, I don't think about it"] },
-    }[state.identityGoal] || { title: "After doing it, how does it feel like it's affecting your discipline?", options: ['I feel like I broke a promise to myself', 'I feel like I let myself down again', "Honestly, I don't think about it"] };
-  }
 
   function startSafeWord(returningTo) { state.safeWordReturn = returningTo; go('safeWordIntro'); }
+  const quitEntry = () => state.triedQuit === 'Yes' ? 'quitProgress' : 'quitFeedback';
   function routeToBlockerCatchUp() {
-    const destination = state.pathway === 'performance' ? 'featureProgress' : 'commitmentIdentity';
+    const destination = state.pathway === 'performance' ? 'commitmentPerformance' : 'commitmentIdentity';
     state.safeWord.trim().length >= 10 ? go(state.pathway === 'performance' ? 'blockerReminder' : destination) : startSafeWord(destination);
   }
 
   function showBlockerReminder() {
     if (state.safeWord.trim().length < 10) {
-      return showInsight({ title: 'Set your safe word before continuing.', message: 'Your safe word is not saved when this page reloads. Create it again to continue your plan.', takeaway: 'Your blocker is activated in the iOS app after checkout.', visual: 'shield', accent: 'mint', buttonTitle: 'Create my safe word' }, () => startSafeWord('featureProgress'));
+      return showInsight({ title: 'Set your safe word before continuing.', message: 'Your safe word is not saved when this page reloads. Create it again to continue your plan.', takeaway: 'Your blocker is activated in the iOS app after checkout.', visual: 'shield', accent: 'mint', buttonTitle: 'Create my safe word' }, () => startSafeWord('commitmentPerformance'));
     }
     mount(`<div class="blocker-ready"><p class="eyebrow mint">YOUR BLOCKER SETUP</p><h1>Your safe word is set.</h1><p>Here is the safe word you created:</p><code class="safe-word-reminder">${escapeHTML(state.safeWord)}</code><p>Our advice: don't save it anywhere. If you can't easily find it, you can't undo your progress on impulse.</p><p class="form-copy">After checkout, activate your blocker in the RELUSTT app.</p>${primaryButton('Continue')}</div>`, { back: false, className: 'blocker-screen' });
-    document.getElementById('continueButton').addEventListener('click', () => go('featureProgress'));
+    document.getElementById('continueButton').addEventListener('click', () => go('commitmentPerformance'));
   }
 
   function showSafeWordEntry() {
@@ -447,7 +444,7 @@
       carousel = app.querySelector('[data-feature-carousel]');
       document.getElementById('continueButton').addEventListener('click', () => {
         const current = featureData[state.screen];
-        go(current.next || (state.pathway === 'performance' ? 'commitmentPerformance' : 'aRecommitment'));
+        go(current.next || 'name');
       });
     }
     // Keep the header, footer, slides, and loaded animations mounted between steps.
@@ -523,7 +520,7 @@
     range.addEventListener('input', () => { state.commitment = Number(range.value); update(); persist(); });
     update();
     document.getElementById('continueButton').addEventListener('click', () => {
-      const next = state.commitment >= 7 ? 'recommitment' : (state.screen === 'commitmentPerformance' ? 'name' : 'featureProgress');
+      const next = state.commitment >= 7 ? 'recommitment' : 'featureProgress';
       go(next);
     });
   }
@@ -532,7 +529,7 @@
     const offsets = ['0px,0px', '70px,-8px', '-70px,10px', '58px,16px', '-48px,20px'];
     mount(`<div class="recommitment-screen"><div class="recommit-lock" aria-hidden="true">🚪</div><h1>Your next chapter starts here.</h1><p class="recommit-question">Ready to step through?</p><p class="recommit-copy">Build your RELUSTT plan to <strong class="recommit-impact">leave porn behind</strong>, with <em class="recommit-urge">support when urges hit.</em></p>
       <div class="recommit-actions">${primaryButton('Yes, take the next step', 'confirmCommitment', '→')}<div class="dodge-zone" id="dodgeZone"><button class="not-yet-button" type="button">Not yet</button></div></div></div>`, { back: false, className: 'recommitment-page' });
-    document.getElementById('confirmCommitment').addEventListener('click', () => go(state.pathway === 'performance' ? 'name' : 'featureProgress'));
+    document.getElementById('confirmCommitment').addEventListener('click', () => go('featureProgress'));
     const button = app.querySelector('.not-yet-button');
     const updateButton = () => {
       const [x, y] = offsets[Math.min(state.notYetAttempts, offsets.length - 1)].split(',');
@@ -969,74 +966,51 @@
     }
   }
 
-  function showTrend() {
-    const responses = [['😄', 'Much better'], ['🙂', 'A little better'], ['😐', 'About the same'], ['😟', 'A little worse'], ['😣', 'Much worse']];
-    const value = Math.round(state.performanceTrendScale);
-    // Ignore the removed alternative answer in sessions saved before this change.
-    delete state.performanceTrendAvoidance;
-    mount(`<div class="trend-screen"><h1>Has it gotten better, worse, or stayed about the same over time?</h1><div class="trend-response"><div id="trendEmoji">${responses[value][0]}</div><strong id="trendLabel">${responses[value][1]}</strong></div>
-      <div class="trend-range"><input id="trendRange" type="range" min="0" max="4" step="1" value="${value}" aria-label="Change over time" /><div><span>BETTER</span><span>WORSE</span></div></div><div class="trend-spacer"></div>${primaryButton('Continue')}</div>`, { className: 'trend-page' });
-    const range = document.getElementById('trendRange');
-    range.addEventListener('input', () => {
-      state.performanceTrendScale = Number(range.value);
-      document.getElementById('trendEmoji').textContent = responses[range.value][0];
-      document.getElementById('trendLabel').textContent = responses[range.value][1];
-      persist();
-    });
-    document.getElementById('continueButton').addEventListener('click', () => {
-      state.performanceTrend = responses[Math.round(state.performanceTrendScale)][1];
-      state.performanceTrendScore = state.performanceTrendScale > 2 ? 'worse' : state.performanceTrendScale < 2 ? 'better' : 'same';
-      go('bPriority');
-    });
-  }
 
   function render() {
     switch (state.screen) {
       case 'welcome': return showWelcome();
       case 'frequency': return showQuestion({ title: 'How often do you currently watch porn?', options: ['Daily', 'A few times a week', 'A few times a month', 'Already trying to cut back'], selected: state.frequency }, (a) => { state.frequency = a; go('motivation'); });
       case 'motivation': return showQuestion({ title: 'What do you usually turn to porn for?', helper: 'Think about the past month. Choose the main reason.', options: ['Sexual pleasure', 'Relieving stress', 'Escaping difficult feelings', 'Filling time when bored', 'It feels automatic', 'Something else or not sure'], selected: state.motivation }, (a) => { state.motivation = a; go('urgeContext'); });
-      case 'urgeContext': return showQuestion({ title: 'When is it hardest to resist?', helper: 'Choose the situation that fits you most often.', options: ['Alone at night', 'While scrolling on my phone', 'When putting off a task', 'After a difficult day', 'It varies', 'Not sure'], selected: state.urgeContext }, (a) => { state.urgeContext = a; go('watchControl'); });
+      case 'urgeContext': return showQuestion({ title: 'When is it hardest to resist?', helper: 'Choose the situation that fits you most often.', options: ['Alone at night', 'While scrolling on my phone', 'When putting off a task', 'After a difficult day', 'It varies', 'Not sure'], selected: state.urgeContext }, (a) => { state.urgeContext = a; go('obstacle'); });
       case 'watchControl': return showQuestion({ title: 'How often do you watch longer than you intended?', helper: 'Think about the past month.', options: ['Never', 'Rarely', 'Sometimes', 'Often', 'Very often', "I haven't watched in the past month"], selected: state.watchControl }, (a) => { state.watchControl = a; go('changePriority'); });
       case 'changePriority': return showQuestion({ title: 'What would you most like to change?', helper: 'Choose your main priority. Your plan can support more than one goal.', options: ['Control over the habit', 'More time and focus', 'Feeling better about myself', 'Closer relationships', 'Confidence in intimacy'], selected: state.changePriority }, (a) => { state.changePriority = a; go('fork'); });
-      case 'fork': return showQuestion({ title: 'Have you struggled to get or keep an erection with a partner?', options: ['Yes', 'No', "I haven't been intimate with a partner yet"], selected: state.forkAnswer, helper: 'Answer honestly.' }, (a) => { state.forkAnswer = a; state.performanceExperience = ''; state.intimacyConcern = ''; if (a === 'Yes') { state.pathway = 'performance'; go('bRelationshipImpact'); } else if (a === 'No') { state.pathway = 'identity'; go('aIdentityGoal'); } else go('forkConcern'); });
-      case 'forkConcern': return showQuestion({ title: "Are you worried this might happen when you're with a partner?", options: ['Yes', 'No'], selected: state.intimacyConcern }, (a) => { state.intimacyConcern = a; state.pathway = 'identity'; go(a === 'Yes' ? 'forkConcernInfo' : 'aIdentityGoal'); });
+      case 'fork': return showQuestion({ title: 'Have you struggled to get or keep an erection with a partner?', options: ['Yes', 'No', "I haven't been intimate with a partner yet"], selected: state.forkAnswer, helper: 'Answer honestly.' }, (a) => { state.forkAnswer = a; state.performanceExperience = ''; state.intimacyConcern = ''; if (a === 'Yes') { state.pathway = 'performance'; go('bRelationshipImpact'); } else if (a === 'No') { state.pathway = 'identity'; go(quitEntry()); } else go('forkConcern'); });
+      case 'forkConcern': return showQuestion({ title: "Are you worried this might happen when you're with a partner?", options: ['Yes', 'No'], selected: state.intimacyConcern }, (a) => { state.intimacyConcern = a; state.pathway = 'identity'; go(a === 'Yes' ? 'forkConcernInfo' : quitEntry()); });
       // Worry without experience gets reassurance, then the regular path. It is not a performance case.
-      case 'forkConcernInfo': return showInsight({ eyebrow: 'A COMMON WORRY', title: "That worry is more common than you think.", message: "A lot of guys put off dating or avoid intimacy because they're afraid of how it might go. That fear usually comes from the gap between what porn has trained your brain to expect and what a real moment feels like. As you step away from porn, that gap closes and the confidence comes back.", takeaway: 'The fear is learned. It can be unlearned.', visual: 'unlock', accent: 'cyan', buttonTitle: 'Got it' }, () => go('aIdentityGoal'));
-      case 'bRelationshipImpact': return showQuestion({ title: 'Has it affected a relationship, or made you avoid intimacy?', options: ["Yes, it's affected a relationship", "No, I'm not in a relationship right now", "I avoid dating or relationships because I'm scared to perform"], selected: state.relationshipImpact }, (a) => { state.relationshipImpact = a; go('bPornConnection'); });
-      case 'bPornConnection': return showQuestion({ title: "Do you think it's connected to your porn use?", options: ['Yes', 'No'], selected: state.pornConnection }, (a) => { state.pornConnection = a; go('bCauseInfo'); });
+      case 'forkConcernInfo': return showInsight({ eyebrow: 'A COMMON WORRY', title: "That worry is more common than you think.", message: "A lot of guys put off dating or avoid intimacy because they're afraid of how it might go. That fear usually comes from the gap between what porn has trained your brain to expect and what a real moment feels like. As you step away from porn, that gap closes and the confidence comes back.", takeaway: 'The fear is learned. It can be unlearned.', visual: 'unlock', accent: 'cyan', buttonTitle: 'Got it' }, () => go(quitEntry()));
+      case 'bRelationshipImpact': return showQuestion({ title: 'Has it affected a relationship, or made you avoid intimacy?', options: ["Yes, it's affected a relationship", "No, I'm not in a relationship right now", "I avoid dating or relationships because I'm scared to perform"], selected: state.relationshipImpact }, (a) => { state.relationshipImpact = a; go('bCauseInfo'); });
       case 'bCauseInfo': return showInsight({ title: 'Porn can train your brain to prefer screens.', message: 'Porn can shape what you associate with arousal, which may contribute to anxiety during real-life intimacy.', takeaway: 'What your brain learned, it can relearn.', visual: 'brain', accent: 'violet', buttonTitle: 'That makes sense' }, () => go('bIntensity'));
       case 'bIntensity': return showQuestion({ title: 'Do you need more extreme content to get the same effect?', options: ['Yes', 'A little', 'No'], selected: state.contentIntensity }, (a) => { state.contentIntensity = a; go('bGapInfo'); });
-      case 'bGapInfo': return showInsight({ title: 'Your arousal threshold rises.', message: "A gap between porn and real intimacy may contribute to anxiety with a partner. We'll help you work on it.", takeaway: 'Less pressure. More confidence with a partner.', visual: 'threshold', accent: 'cyan', buttonTitle: 'I understand' }, () => go('bTriedQuit'));
-      case 'bTriedQuit': return showQuestion({ title: 'Have you tried to quit or cut back before?', options: ['Yes', 'No'], selected: state.triedQuit, binary: true }, (a) => { state.triedQuit = a; if (a === 'Yes') go('bQuitProgress'); else { state.quitProgress = ''; state.setbackTrigger = ''; go('quitFeedback'); } });
-      case 'bQuitProgress': return showQuestion({ title: "How's that been going?", options: ["Good, I've made real progress", 'Not great, I keep relapsing', 'On and off'], selected: state.quitProgress, helper: 'Be honest with yourself.' }, (a) => { state.quitProgress = a; go('quitFeedback'); });
+      case 'bGapInfo': return showInsight({ title: 'Your arousal threshold rises.', message: "A gap between porn and real intimacy may contribute to anxiety with a partner. We'll help you work on it.", takeaway: 'Less pressure. More confidence with a partner.', visual: 'threshold', accent: 'cyan', buttonTitle: 'I understand' }, () => go(quitEntry()));
+      case 'quitProgress': {
+        if (state.triedQuit !== 'Yes') { state.screen = 'quitFeedback'; writeRoute('replace'); persist(); return render(); }
+        return showQuestion({ title: "How's that been going?", options: ["Good, I've made real progress", 'Not great, I keep relapsing', 'On and off'], selected: state.quitProgress, helper: 'Be honest with yourself.' }, (a) => { state.quitProgress = a; go('quitFeedback'); });
+      }
       case 'setbackTrigger': {
         if (state.triedQuit !== 'Yes') { state.screen = 'quitFeedback'; writeRoute('replace'); persist(); return render(); }
-        return showQuestion({ title: 'What usually brings you back after trying to stop?', helper: 'Choose the biggest obstacle, if you have run into one.', options: ['Stress or difficult feelings', 'Easy access in the moment', 'Not knowing what to do instead', 'One setback makes me give up', "I haven't returned to it", 'Something else or not sure'], selected: state.setbackTrigger }, (a) => { state.setbackTrigger = a; go(state.pathway === 'performance' ? 'bTrend' : 'aIdentityImpact'); });
+        return showQuestion({ title: 'What usually brings you back after trying to stop?', helper: 'Choose the biggest obstacle, if you have run into one.', options: ['Stress or difficult feelings', 'Easy access in the moment', 'Not knowing what to do instead', 'One setback makes me give up', "I haven't returned to it", 'Something else or not sure'], selected: state.setbackTrigger }, (a) => { state.setbackTrigger = a; go('supportPreference'); });
       }
-      case 'supportPreference': return showQuestion({ title: 'What support would you feel comfortable using?', helper: 'Choose what you would be most likely to turn to.', options: ['Private guidance on my own', 'An anonymous community', 'Someone I trust', "I'm not sure yet"], selected: state.supportPreference }, (a) => { state.supportPreference = a; routeToBlockerCatchUp(); });
+      case 'supportPreference': return showQuestion({ title: 'What support would you feel comfortable using?', helper: 'Choose what you would be most likely to turn to.', options: ['Private guidance on my own', 'An anonymous community', 'Someone I trust', "I'm not sure yet"], selected: state.supportPreference }, (a) => { state.supportPreference = a; go('supportInfo'); });
       case 'quitFeedback': {
-        const nextQuestion = state.pathway === 'performance' ? 'bTrend' : 'aIdentityImpact';
+        const nextQuestion = 'supportPreference';
         if (state.triedQuit === 'No') return showInsight({ title: 'This is where you start.', message: "Never having tried before isn't a disadvantage. It just means you haven't had the right structure yet. Here's where we come in: RELUSTT blocks the sites for you. To turn them back on, you'll need your safe word.", takeaway: 'Build the structure before you need it.', visual: 'plant', accent: 'mint', buttonTitle: 'Build my system' }, () => startSafeWord(nextQuestion));
         const good = state.quitProgress.startsWith('Good');
         return showInsight({ title: good ? "You've built real momentum." : "Your willpower isn't the problem.", message: good ? "That's more than most people manage on their own. Let's build on it." : "Breaking this habit is hard with willpower alone. You need a system for when urges hit.", takeaway: good ? 'RELUSTT turns progress into consistency.' : 'RELUSTT is that system.', visual: good ? 'trophy' : 'plant', accent: good ? 'mint' : 'violet', buttonTitle: good ? 'Protect my progress' : 'Build my system' }, () => go('setbackTrigger'));
       }
-      case 'bTrend': return showTrend();
-      case 'bPriority': return showQuestion({ title: 'What matters most to you right now?', options: ['Feel confident during intimacy', 'Feel closer to my partner', 'Stop falling back into the same habit', 'Get my focus and energy back'], selected: state.performanceGoal }, (a) => { state.performanceGoal = a; go('supportPreference'); });
-      case 'aIdentityGoal': return showQuestion({ eyebrow: 'YOUR FUTURE SELF', title: "Picture the version of you that's fully in control of this. What's different about him?", options: ['More disciplined', 'More confident', 'More present with people', 'More productive'], selected: state.identityGoal }, (a) => { state.identityGoal = a; go('aObstacle'); });
-      case 'aObstacle': return showQuestion({ eyebrow: "WHAT'S IN THE WAY", title: "What's stopping you from being him right now?", options: ["The habit's stronger than my willpower", "I don't know where to start", "I've tried and failed before", "Honestly, I haven't tried"], selected: state.obstacle }, (a) => { state.obstacle = a; go('aObstacleInfo'); });
-      case 'aObstacleInfo': return obstacleInsight();
-      case 'aObstacleBridge': return showTypedBridge({ line: 'First, a few quick questions so your system fits you.', next: 'aIntensity' });
-      case 'aIntensity': return showQuestion({ eyebrow: 'THE PATTERN', title: 'Do you ever notice yourself needing more intense content to feel the same effect?', options: ['Yes', 'A little', 'No'], selected: state.contentIntensity }, (a) => { state.contentIntensity = a; go('aTriedQuit'); });
-      case 'aTriedQuit': return showQuestion({ title: 'Have you tried to quit or cut back before?', options: ['Yes', 'No'], selected: state.triedQuit, binary: true }, (a) => { state.triedQuit = a; if (a === 'Yes') go('aQuitProgress'); else { state.quitProgress = ''; state.setbackTrigger = ''; go('quitFeedback'); } });
-      case 'aQuitProgress': return showQuestion({ title: "How's that been going?", options: ["Good, I've made real progress", 'Not great, I keep relapsing', 'On and off'], selected: state.quitProgress, helper: 'Be honest with yourself.' }, (a) => { state.quitProgress = a; go('quitFeedback'); });
-      case 'aIdentityImpact': { const content = identityImpactContent(); return showQuestion({ eyebrow: 'AFTER THE MOMENT', ...content, selected: state.identityImpact }, (a) => { state.identityImpact = a; go('aSupport'); }); }
-      case 'aSupport': return showQuestion({ eyebrow: 'YOUR SUPPORT', title: "Does anyone know you're trying to change this?", options: ['No one', 'One person', "I'm hiding it"], selected: state.support }, (a) => { state.support = a; go(a === 'One person' ? 'aTrend' : 'aSupportInfo'); });
-      case 'aSupportInfo': {
-        const alone = state.support === 'No one';
-        return showInsight({ eyebrow: "YOU DON'T HAVE TO CARRY IT ALONE", title: alone ? 'Shared weight becomes lighter.' : 'Shame grows in secrecy.', message: alone ? "Consider telling someone you trust. There's an old saying: a joy shared is doubled, a sorrow shared is halved. Carrying this alone makes it heavier than it has to be." : "There's no need to be ashamed of this. A lot of guys are dealing with exactly this, in exactly this kind of secrecy. You're not the only one, even though it feels that way.", takeaway: 'This is a learned response, and learned responses can change.', visual: alone ? 'people' : 'unlock', accent: 'cyan', buttonTitle: 'Continue' }, () => go('aTrend'));
+      case 'obstacle': return showQuestion({ eyebrow: "WHAT'S IN THE WAY", title: "What's stopping you from quitting right now?", options: ["The habit's stronger than my willpower", "I don't know where to start", "I've tried and failed before", "Honestly, I haven't tried"], selected: state.obstacle }, (a) => {
+        state.obstacle = a;
+        // The obstacle answer doubles as quit history; "haven't tried" and "don't know where to start" mean no previous attempt.
+        state.triedQuit = ["Honestly, I haven't tried", "I don't know where to start"].includes(a) ? 'No' : 'Yes';
+        if (state.triedQuit === 'No') { state.quitProgress = ''; state.setbackTrigger = ''; }
+        go('obstacleInfo');
+      });
+      case 'obstacleInfo': return obstacleInsight();
+      case 'obstacleBridge': return showTypedBridge({ line: 'First, a few quick questions so your system fits you.', next: 'watchControl' });
+      case 'supportInfo': {
+        const trusted = state.supportPreference === 'Someone I trust';
+        return showInsight({ eyebrow: "YOU DON'T HAVE TO CARRY IT ALONE", title: trusted ? 'Shared weight becomes lighter.' : 'Shame grows in secrecy.', message: trusted ? "Telling someone you trust is a strong move. There's an old saying: a joy shared is doubled, a sorrow shared is halved. Carrying this alone makes it heavier than it has to be." : "There's no need to be ashamed of this. A lot of guys are dealing with exactly this, in exactly this kind of secrecy. You're not the only one, even though it feels that way.", takeaway: 'This is a learned response, and learned responses can change.', visual: trusted ? 'people' : 'unlock', accent: 'cyan', buttonTitle: 'Continue' }, () => routeToBlockerCatchUp());
       }
-      case 'aTrend': return showQuestion({ eyebrow: 'OVER TIME', title: 'Has it gotten better or worse over time?', options: ['Better', 'Worse', "Haven't really noticed"], selected: state.identityTrend }, (a) => { state.identityTrend = a; go('aTimeUse'); });
-      case 'aTimeUse': return showQuestion({ eyebrow: "WHAT YOU'RE RECLAIMING", title: 'If you got back all the time and energy this takes up, what would you actually do with it?', options: ['Build my body', 'Create a business', 'Spend time with people who matter', 'Create meaningful relationships'], selected: state.reclaimedTime }, (a) => { state.reclaimedTime = a; go('supportPreference'); });
       case 'safeWordIntro': return showInsight({ title: 'RELUSTT blocks adult sites automatically.', message: 'Adult sites stay out of reach, even when urges hit. Add any other site you want to block.', takeaway: 'Blocking can only be turned off with the safe word you create.', visual: 'blocker', accent: 'mint', buttonTitle: 'Create my safe word' }, () => go('safeWordEntry'));
       case 'safeWordEntry': return showSafeWordEntry();
       case 'blockerLive': return showBlockerReady();
@@ -1044,8 +1018,6 @@
       case 'featureProgress': case 'featureCommunity': case 'featureSupport': case 'featureLessons': return showFeature(state.screen);
       case 'commitmentPerformance': case 'commitmentIdentity': return showCommitment();
       case 'recommitment': return showRecommitment();
-      case 'aRecommitment': return showQuestion({ eyebrow: 'YOUR COMMITMENT', title: `You said you're a ${state.commitment}/10. Are you really that committed?`, options: ['Yes', 'Honestly, not sure'], selected: state.recommitmentAnswer }, (a) => { state.recommitmentAnswer = a; go(a === 'Yes' ? 'name' : 'aRecommitmentInfo'); });
-      case 'aRecommitmentInfo': return showInsight({ title: 'You can start before you feel certain.', message: "That's fair. Nobody's fully sure until they start seeing it work. But nothing changes without deciding right now.", takeaway: 'Take the next step at your own pace.', visual: 'plant', buttonTitle: 'Continue' }, () => go('name'));
       case 'name': return showName();
       case 'pledge': return showPledge();
       case 'planAnalysis': return showPlanAnalysis();
