@@ -58,7 +58,7 @@ const sharedExamples = [
   ['confidence', { changePriority: 'Confidence in intimacy' }],
   ['reconnect', { changePriority: 'Closer relationships' }],
   ['cycle', { motivation: 'It feels automatic', watchControl: 'Often', setbackTrigger: 'Easy access in the moment' }],
-  ['quiet', { motivation: 'Escaping difficult feelings', supportPreference: 'An anonymous community', setbackTrigger: 'Stress or difficult feelings' }],
+  ['quiet', { motivation: 'Escaping difficult feelings', supportPreference: 'Support 24/7, whenever an urge hits', setbackTrigger: 'Stress or difficult feelings' }],
   ['focus', { changePriority: 'More time and focus', urgeContext: 'When putting off a task' }],
   ['starter', { triedQuit: 'No' }],
 ];

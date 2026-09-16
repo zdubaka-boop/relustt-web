@@ -170,6 +170,12 @@ window.RelusttArchetypes = (() => {
       "I haven't returned to it": [], 'Something else or not sure': [],
     },
     supportPreference: {
+      'Seeing my progress in real time': [['confidence', 2, 'Wanting to see progress add up']],
+      'Talking to people who get it': [['reconnect', 2, 'Wanting people who understand']],
+      'Support 24/7, whenever an urge hits': [['quiet', 3, 'A preference for private, on-demand support']],
+      'Understanding why this happens': [['starter', 2, 'Wanting to understand the pattern']],
+      'Blocking adult sites automatically': [['cycle', 2, 'Wanting friction against easy access']],
+      // Earlier wording, kept so sessions saved before 2026-09-17 still score.
       'Private guidance on my own': [['quiet', 2, 'A preference for private guidance']],
       'An anonymous community': [['quiet', 4, 'A preference for anonymous support']],
       'Someone I trust': [], "I'm not sure yet": [],

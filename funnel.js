@@ -8,33 +8,34 @@
     obstacle: 'obstacles', obstacleInfo: 'build-your-system', obstacleBridge: 'personalizing',
     watchControl: 'watch-control', changePriority: 'main-priority',
     fork: 'intimacy', forkConcern: 'intimacy-concern', forkConcernInfo: 'intimacy-worry',
-    bRelationshipImpact: 'relationship-impact', bCauseInfo: 'brain-conditioning',
+    bCauseInfo: 'brain-conditioning',
     bIntensity: 'performance-content-intensity', bGapInfo: 'arousal-threshold',
     triedQuit: 'quit-history', quitProgress: 'quit-progress', quitFeedback: 'quit-feedback', setbackTrigger: 'setback-trigger',
-    supportPreference: 'support-preference', supportInfo: 'shared-support',
+    supportPreference: 'support-preference', supportBridge: 'good-news', featureSpotlight: 'your-support', blockerBridge: 'one-more-thing',
     safeWordIntro: 'blocker-introduction', safeWordEntry: 'safe-word', blockerLive: 'blocker-ready', blockerReminder: 'blocker-reminder',
-    featureProgress: 'progress', featureCommunity: 'community', featureSupport: 'ai-support',
-    featureLessons: 'lessons', commitmentPerformance: 'performance-commitment',
-    commitmentIdentity: 'identity-commitment', recommitment: 'confirm-commitment',
+    commitmentPerformance: 'performance-commitment',
+    commitmentIdentity: 'identity-commitment',
     name: 'your-name', pledge: 'pledge', planAnalysis: 'analyzing-answers', price: 'choose-price', paywall: 'your-plan',
   };
   // Screens removed by the 2026-09-16 question cut. Old links and saved sessions land on the nearest live step.
   const legacyScreens = {
     aObstacle: 'obstacle', aObstacleInfo: 'obstacleInfo', aObstacleBridge: 'obstacleBridge',
-    aQuitProgress: 'quitProgress', bQuitProgress: 'quitProgress', aTriedQuit: 'quitProgress', bTriedQuit: 'quitProgress',
-    aSupportInfo: 'supportInfo', bOccurrence: 'bRelationshipImpact', bPornConnection: 'bCauseInfo',
+    aQuitProgress: 'quitProgress', bQuitProgress: 'quitProgress', aTriedQuit: 'triedQuit', bTriedQuit: 'triedQuit',
+    aSupportInfo: 'supportPreference', supportInfo: 'supportPreference', bOccurrence: 'bCauseInfo', bRelationshipImpact: 'bCauseInfo', bPornConnection: 'bCauseInfo',
     aIdentityGoal: 'obstacle', aIntensity: 'watchControl',
     aIdentityImpact: 'supportPreference', aSupport: 'supportPreference', aTrend: 'supportPreference', aTimeUse: 'supportPreference',
     bTrend: 'supportPreference', bPriority: 'supportPreference', bAnxietyTrigger: 'supportPreference', bConfidenceSpill: 'supportPreference',
-    aRecommitment: 'name', aRecommitmentInfo: 'name',
+    aRecommitment: 'name', aRecommitmentInfo: 'name', recommitment: 'commitmentIdentity',
+    featureProgress: 'name', featureCommunity: 'name', featureSupport: 'name', featureLessons: 'name',
   };
   const legacySlugs = {
-    'anxiety-triggers': 'supportPreference', 'confidence-impact': 'supportPreference', 'performance-experience': 'bRelationshipImpact',
+    'shared-support': 'supportPreference', 'anxiety-triggers': 'supportPreference', 'confidence-impact': 'supportPreference', 'performance-experience': 'bCauseInfo', 'relationship-impact': 'bCauseInfo',
     'porn-connection': 'bCauseInfo', 'identity-goal': 'obstacle', 'content-intensity': 'watchControl',
-    'quit-history': 'quitProgress', 'performance-quit-history': 'quitProgress', 'performance-quit-progress': 'quitProgress',
+    'performance-quit-history': 'triedQuit', 'performance-quit-progress': 'quitProgress',
     'identity-impact': 'supportPreference', 'support': 'supportPreference', 'habit-trend': 'supportPreference',
     'reclaim-your-time': 'supportPreference', 'performance-trend': 'supportPreference', 'performance-priority': 'supportPreference',
-    'recommitment-check': 'name', 'start-with-uncertainty': 'name',
+    'recommitment-check': 'name', 'start-with-uncertainty': 'name', 'confirm-commitment': 'commitmentIdentity',
+    'progress': 'name', 'community': 'name', 'ai-support': 'name', 'lessons': 'name',
   };
   const screensBySlug = new Map([...Object.entries(legacySlugs), ...Object.entries(stepSlugs).map(([screen, slug]) => [slug, screen])]);
   const defaults = {
@@ -160,11 +161,13 @@
 
   function questionProgressScreens() {
     const usedConcernFollowUp = state.screen === 'forkConcern' || state.history.includes('forkConcern');
-    const screens = ['frequency', 'motivation', 'urgeContext', 'obstacle', 'watchControl', 'changePriority', 'fork'];
+    const screens = ['frequency', 'motivation', 'triedQuit'];
+    // Assume prior attempts until answered, so the total shrinks rather than grows mid-quiz.
+    if (state.triedQuit !== 'No') screens.push('quitProgress');
+    screens.push('urgeContext', 'obstacle', 'watchControl', 'changePriority', 'fork');
     if (usedConcernFollowUp) screens.push('forkConcern');
-    if (state.pathway === 'performance') screens.push('bRelationshipImpact', 'bIntensity');
-    // Assume prior attempts until the obstacle answer says otherwise, so the total does not grow mid-quiz.
-    if (state.triedQuit !== 'No') screens.push('quitProgress', 'setbackTrigger');
+    if (state.pathway === 'performance') screens.push('bIntensity');
+    if (state.triedQuit !== 'No') screens.push('setbackTrigger');
     screens.push('supportPreference', state.pathway === 'performance' ? 'commitmentPerformance' : 'commitmentIdentity', 'name');
     return screens;
   }
@@ -271,26 +274,31 @@
     </defs>`;
     const label = (x, y, text, anchor = 'middle') => `<text class="ov-label" x="${x}" y="${y}" text-anchor="${anchor}">${text}</text>`;
     if (kind === 'system') {
-      const hex = 'M52 0 26 45 -26 45 -52 0 -26 -45 26 -45Z';
-      const spokes = [[52, 0], [26, 45], [-26, 45], [-52, 0], [-26, -45], [26, -45]];
-      return `<svg class="obstacle-visual ov-system" viewBox="0 0 360 220" aria-hidden="true">${defs}
-        <ellipse class="ov-aura" cx="250" cy="106" rx="120" ry="84" fill="url(#ovAura)"/>
-        <g class="ov-gauge" transform="translate(66 34)">
-          <rect class="ov-gauge-cap" x="15" y="-8" width="14" height="8" rx="3"/>
-          <rect class="ov-gauge-shell" x="0" y="0" width="44" height="128" rx="14"/>
-          <rect class="ov-gauge-fill" x="6" y="6" width="32" height="116" rx="10"/>
-          <rect class="ov-gauge-sheen" x="10" y="12" width="6" height="104" rx="3"/>
-          ${label(22, 156, 'WILLPOWER')}
+      // Two attempts on one chart. Willpower: every try climbs a little less and crashes
+      // to the floor, never near the goal. Then it dims and the system line draws over it:
+      // it still dips, but it recovers each time and reaches the goal.
+      const willpower = 'M30 190C50 170 62 150 74 138L82 190C100 172 112 156 124 146L132 190C148 174 160 162 170 154L178 190C194 176 206 166 214 160L222 190C236 180 250 172 262 168L270 190L330 190';
+      const system = 'M30 190C60 176 80 160 100 140L108 156C130 138 150 118 176 100L184 114C210 96 240 74 270 60L276 70C296 58 316 46 330 40';
+      const crashes = [82, 132, 178, 222, 270];
+      const dips = [[108, 156], [184, 114], [276, 70]];
+      return `<svg class="obstacle-visual ov-graph" viewBox="0 0 360 220" aria-hidden="true">${defs}
+        <linearGradient id="ovDanger" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#ff6a7e"/><stop offset="1" stop-color="#ff9a86"/></linearGradient>
+        <ellipse class="ov-aura ov-graph-aura" cx="300" cy="52" rx="96" ry="66" fill="url(#ovAura)"/>
+        <g class="ov-graph-grid">${[80, 120, 160].map(y => `<path d="M30 ${y}H330"/>`).join('')}</g>
+        <path class="ov-graph-floor" d="M30 190H330"/>
+        <path class="ov-graph-goal" d="M30 40H330"/>
+        <text class="ov-label ov-graph-goal-label" x="330" y="30" text-anchor="end">GOAL</text>
+        <g class="ov-graph-willpower">
+          <path class="ov-graph-will-line" d="${willpower}" pathLength="1"/>
+          ${crashes.map((x, i) => `<circle class="ov-graph-crash" style="--i:${i}" cx="${x}" cy="190" r="4"/>`).join('')}
+          <text class="ov-label ov-graph-will-label" x="30" y="30" text-anchor="start">WILLPOWER</text>
         </g>
-        <g class="ov-lattice" transform="translate(250 104)">
-          <path class="ov-hex ov-hex-glow" d="${hex}" pathLength="1"/>
-          <path class="ov-hex" d="${hex}" pathLength="1"/>
-          ${spokes.map(([x, y], i) => `<line class="ov-spoke" style="--i:${i}" x1="0" y1="0" x2="${x}" y2="${y}" pathLength="1"/>`).join('')}
-          ${spokes.map(([x, y], i) => `<circle class="ov-node" style="--i:${i}" cx="${x}" cy="${y}" r="4"/>`).join('')}
-          <circle class="ov-core-halo" r="22" filter="url(#ovBlur)"/>
-          <circle class="ov-core-ring" r="15"/>
-          <circle class="ov-core" r="8"/>
-          ${label(0, 86, 'YOUR SYSTEM')}
+        <g class="ov-graph-system">
+          <path class="ov-graph-sys-glow" d="${system}" pathLength="1" filter="url(#ovBlur)"/>
+          <path class="ov-graph-sys-line" d="${system}" pathLength="1"/>
+          ${dips.map(([x, y], i) => `<circle class="ov-graph-dip" style="--i:${i}" cx="${x}" cy="${y}" r="4"/>`).join('')}
+          <g class="ov-graph-summit" transform="translate(330 40)"><circle class="ov-ring" r="10"/><circle class="ov-dot" r="6"/></g>
+          <text class="ov-label ov-graph-sys-label" x="30" y="30" text-anchor="start">WITH A SYSTEM</text>
         </g>
       </svg>`;
     }
@@ -366,20 +374,23 @@
   // screen mounts. It replaces its own route, so Back skips it instead of replaying.
   const WORD_STAGGER = 90;
   const WORD_SETTLE = 550;
-  // Time the line stays fully settled before it dissolves, scaled to its length.
-  const READ_PER_WORD = 260;
-  const MIN_READ = 2200;
-  const FADE_OUT = 700;
-  function showTypedBridge({ line, next }) {
-    const words = line.split(' ');
+  // Time a line stays fully settled before it dissolves, scaled to its length.
+  const READ_PER_WORD = 170;
+  const MIN_READ = 1300;
+  const FADE_OUT = 650;
+  // A beat between screens. Each line's words settle in on a CSS stagger, hold,
+  // then dissolve before the next line or screen. It replaces its own route, so
+  // Back skips it instead of replaying.
+  function showTypedBridge({ lines, next }) {
+    const beats = Array.isArray(lines) ? lines : [lines];
     mount(`<div class="bridge-screen">
-      <p class="bridge-line" id="bridgeLine" aria-hidden="true">${words.map((word, index) => `<span class="bridge-word" style="--i:${index}">${escapeHTML(word)}</span>`).join(' ')}</p>
-      <div class="analysis-status" role="status" aria-live="polite">${escapeHTML(line)}</div>
+      <div class="bridge-stage" id="bridgeStage" aria-hidden="true"></div>
+      <div class="analysis-status" role="status" aria-live="polite">${escapeHTML(beats.join(' '))}</div>
     </div>`, { back: false, className: 'bridge-page' });
-    const lineElement = document.getElementById('bridgeLine');
+    const stage = document.getElementById('bridgeStage');
     const origin = state.screen;
     const later = (callback, delay) => activeTimers.push(window.setTimeout(() => {
-      if (state.screen === origin && lineElement.isConnected) callback();
+      if (state.screen === origin && stage.isConnected) callback();
     }, delay));
     const advance = () => {
       state.screen = next;
@@ -387,20 +398,24 @@
       persist();
       render();
     };
-    const hold = Math.max(MIN_READ, words.length * READ_PER_WORD);
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return later(advance, hold + 900);
-    const settled = words.length * WORD_STAGGER + WORD_SETTLE;
-    later(() => lineElement.classList.add('is-leaving'), settled + hold);
-    later(advance, settled + hold + FADE_OUT);
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const play = (index) => {
+      const words = beats[index].split(' ');
+      stage.innerHTML = `<p class="bridge-line">${words.map((word, i) => `<span class="bridge-word" style="--i:${i}">${escapeHTML(word)}</span>`).join(' ')}</p>`;
+      const lineElement = stage.firstElementChild;
+      const hold = Math.max(MIN_READ, words.length * READ_PER_WORD);
+      const done = () => (index + 1 < beats.length ? play(index + 1) : advance());
+      if (reducedMotion) return later(done, hold + 700);
+      const settled = words.length * WORD_STAGGER + WORD_SETTLE;
+      later(() => lineElement.classList.add('is-leaving'), settled + hold);
+      later(done, settled + hold + FADE_OUT);
+    };
+    play(0);
   }
 
 
   function startSafeWord(returningTo) { state.safeWordReturn = returningTo; go('safeWordIntro'); }
-  const quitEntry = () => state.triedQuit === 'Yes' ? 'quitProgress' : 'quitFeedback';
-  function routeToBlockerCatchUp() {
-    const destination = state.pathway === 'performance' ? 'commitmentPerformance' : 'commitmentIdentity';
-    state.safeWord.trim().length >= 10 ? go(state.pathway === 'performance' ? 'blockerReminder' : destination) : startSafeWord(destination);
-  }
+  const setbackEntry = () => state.triedQuit === 'Yes' ? 'setbackTrigger' : 'supportPreference';
 
   function showBlockerReminder() {
     if (state.safeWord.trim().length < 10) {
@@ -438,11 +453,20 @@
   }
 
   const featureData = {
-    featureProgress: { step: 1, title: 'See your progress.', message: 'A personal timeline shows what changes, when, and what comes next.', visual: 'progress', next: 'featureCommunity' },
-    featureCommunity: { step: 2, title: "You're not doing this alone.", message: 'Join people working through the same challenge, without judgment.', visual: 'community', next: 'featureSupport' },
-    featureSupport: { step: 3, title: 'Support when urges hit.', message: 'Your private AI coach helps you move through the urge instead of giving in.', visual: 'support', next: 'featureLessons' },
-    featureLessons: { step: 4, title: 'Understand the pattern.', message: 'Twenty research-backed lessons show you why it happens and how to break it for good.', visual: 'lessons', next: null },
+    featureProgress: { title: 'See your progress.', message: 'A personal timeline shows what changes, when, and what comes next.', visual: 'progress' },
+    featureCommunity: { title: "You're not doing this alone.", message: 'Join people working through the same challenge, without judgment.', visual: 'community' },
+    featureSupport: { title: 'Support when urges hit.', message: 'Your private AI coach helps you move through the urge instead of giving in.', visual: 'support' },
+    featureLessons: { title: 'Understand the pattern.', message: 'Twenty research-backed lessons show you why it happens and how to break it for good.', visual: 'lessons' },
   };
+  // Each support answer leads with one benefit. The blocker has its own screens.
+  const supportFeatures = {
+    'Seeing my progress in real time': 'featureProgress',
+    'Talking to people who get it': 'featureCommunity',
+    'Support 24/7, whenever an urge hits': 'featureSupport',
+    'Understanding why this happens': 'featureLessons',
+    'Blocking adult sites automatically': 'blocker',
+  };
+  const pickedFeature = () => supportFeatures[state.supportPreference];
 
   function featureVisual(type) {
     if (type === 'progress') return `<div class="journey-visual" role="img" aria-label="An illustrative progress line grows through small daily steps.">
@@ -499,124 +523,70 @@
     });
   }
 
-  function showFeature(screen) {
-    const keys = Object.keys(featureData);
-    const index = keys.indexOf(screen);
-    const feature = featureData[screen];
-    let carousel = app.querySelector('[data-feature-carousel]');
-    if (!carousel) {
-      mount(`<div class="feature-screen" data-feature-carousel data-feature-index="${index}">
-        <div class="feature-meta"><span>YOUR RELUSTT PLAN</span><span id="featureCount">${feature.step} OF 4</span></div>
-        <div class="feature-viewport"><div class="feature-track" style="transform:translateX(-${index * 100}%)">
-          ${keys.map((key) => {
-            const item = featureData[key];
-            return `<article class="feature-slide${key === screen ? ' is-active' : ''}" data-feature="${key}" role="group" aria-roledescription="slide" aria-label="${item.step} of 4" aria-hidden="${key !== screen}" ${key !== screen ? 'inert' : ''}>
-              <div class="feature-visual">${featureVisual(item.visual)}</div><div class="feature-copy"><h1 tabindex="-1">${escapeHTML(item.title)}</h1><p>${escapeHTML(item.message)}</p></div>
-            </article>`;
-          }).join('')}
-        </div></div>
-        <div class="feature-dots" aria-hidden="true">${keys.map((key) => `<i class="${key === screen ? 'active' : ''}"></i>`).join('')}</div>
-        ${primaryButton(feature.next ? 'Next' : 'Continue')}
-      </div>`, { back: false, className: 'feature-page' });
-      carousel = app.querySelector('[data-feature-carousel]');
-      document.getElementById('continueButton').addEventListener('click', () => {
-        const current = featureData[state.screen];
-        go(current.next || 'name');
-      });
-    }
-    // Keep the header, footer, slides, and loaded animations mounted between steps.
-    carousel.dataset.featureIndex = String(index);
-    carousel.querySelector('.feature-track').style.transform = `translateX(-${index * 100}%)`;
-    carousel.querySelector('#featureCount').textContent = `${feature.step} OF 4`;
-    carousel.querySelectorAll('.feature-slide').forEach((slide) => {
-      const selected = slide.dataset.feature === screen;
-      slide.classList.toggle('is-active', selected);
-      if (selected) slide.classList.add('has-played');
-      slide.setAttribute('aria-hidden', String(!selected));
-      slide.inert = !selected;
-      slide.querySelectorAll('[data-lottie]').forEach((visual) => {
-        if (selected) visual.relusttAnimation?.play();
-        else visual.relusttAnimation?.pause();
-      });
-    });
-    carousel.querySelectorAll('.feature-dots i').forEach((dot, i) => dot.classList.toggle('active', i === index));
-    document.getElementById('continueButton').firstElementChild.textContent = feature.next ? 'Next' : 'Continue';
+
+  // The one benefit the user asked for, shown on its own before the blocker.
+  function showFeatureSpotlight() {
+    const key = pickedFeature();
+    const feature = featureData[key];
+    if (!feature) { state.screen = 'blockerBridge'; writeRoute('replace'); persist(); return render(); }
+    mount(`<div class="feature-screen feature-spotlight">
+      <div class="feature-meta"><span>BUILT INTO YOUR PLAN</span></div>
+      <div class="feature-viewport"><div class="feature-track"><article class="feature-slide is-active has-played" data-feature="${key}">
+        <div class="feature-visual">${featureVisual(feature.visual)}</div><div class="feature-copy"><h1>${escapeHTML(feature.title)}</h1><p>${escapeHTML(feature.message)}</p></div>
+      </article></div></div>
+      ${primaryButton('Continue')}
+    </div>`, { back: false, className: 'feature-page' });
+    document.getElementById('continueButton').addEventListener('click', () => go('blockerBridge'));
     if (feature.visual === 'support') startChatShowcase();
   }
 
-  function commitmentLabel() {
-    if (state.commitment <= 3) return 'Exploring a new path.';
-    if (state.commitment <= 6) return 'Ready to take a step.';
-    if (state.commitment <= 8) return 'Ready to move forward.';
-    return 'Ready for a new chapter.';
+  // One line per step. They grow and shift red -> yellow -> green with the slider.
+  const commitmentWords = ['Just curious.', 'Not sure yet.', 'Thinking about it.', 'Warming up.', 'Ready to try.', 'Getting serious.', 'Committed.', 'All in.', 'No going back.', 'Never again.'];
+  const commitmentLabel = () => commitmentWords[Math.min(Math.max(state.commitment, 1), 10) - 1];
+  function commitmentColor(progress) {
+    const channels = (color) => color.match(/[0-9a-f]{2}/gi).map((part) => parseInt(part, 16));
+    const [from, to, t] = progress < .5 ? ['#ff6a7e', '#ffcf5a', progress * 2] : ['#ffcf5a', '#4de6ad', (progress - .5) * 2];
+    const mixed = channels(from).map((channel, i) => Math.round(channel + (channels(to)[i] - channel) * t));
+    return `rgb(${mixed.join(', ')})`;
   }
 
+  // Each tap on "Not yet" nudges it away and shrinks it, until it gives up.
+  const notYetOffsets = ['0px,0px', '70px,-8px', '-70px,10px', '58px,16px', '-48px,20px'];
   function showCommitment() {
-    mount(`<div class="commitment-screen"><p class="gradient-eyebrow">YOUR NEXT CHAPTER</p><h1>Ready to open the door to a new path?</h1>
-      <div class="commitment-journey" id="commitmentJourney">
-        <svg class="commitment-doorway" viewBox="0 0 440 310" aria-hidden="true">
-          <defs>
-            <radialGradient id="doorAura"><stop stop-color="#b18aff" stop-opacity=".48"/><stop offset="1" stop-color="#8750ef" stop-opacity="0"/></radialGradient>
-            <linearGradient id="doorLight" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#faf2ff"/><stop offset=".55" stop-color="#dcc4ff"/><stop offset="1" stop-color="#a373ff"/></linearGradient>
-            <linearGradient id="doorLeaf" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#5b378d"/><stop offset="1" stop-color="#21132f"/></linearGradient>
-            <linearGradient id="doorSpill" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#c6a2ff" stop-opacity=".35"/><stop offset="1" stop-color="#9d62ff" stop-opacity="0"/></linearGradient>
-            <linearGradient id="journeyPurple" gradientUnits="userSpaceOnUse" x1="116" y1="280" x2="251" y2="166"><stop stop-color="#7138e9"/><stop offset=".6" stop-color="#b184ff"/><stop offset="1" stop-color="#f0ddff"/></linearGradient>
-            <filter id="journeyGlow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="5"/></filter>
-            <path id="commitmentRoad" pathLength="100" d="M116 280C124 251 172 255 208 246C287 224 296 199 251 166"/>
-          </defs>
-          <g class="door-atmosphere"><ellipse cx="253" cy="104" rx="135" ry="112" fill="url(#doorAura)"/><ellipse cx="247" cy="175" rx="152" ry="54" fill="url(#doorAura)"/></g>
-          <path d="M64 180Q220 149 373 180M95 204Q226 171 350 202" fill="none" stroke="#ad8de7" stroke-opacity=".09"/>
-          <path class="door-spill" d="M222 157L108 284Q230 311 363 281L291 157Z" fill="url(#doorSpill)"/>
-          <use href="#commitmentRoad" fill="none" stroke="#ad87ed" stroke-opacity=".1" stroke-width="22" stroke-linecap="round"/>
-          <use class="journey-trail journey-trail-glow" href="#commitmentRoad"/>
-          <use class="journey-trail" href="#commitmentRoad"/>
-          <rect class="door-halo" x="216" y="31" width="81" height="133" rx="4" fill="url(#doorLight)" filter="url(#journeyGlow)"/>
-          <path d="M216 165V33H297V165" fill="#211431" stroke="#b28ae9" stroke-width="3"/>
-          <rect class="door-opening" x="222" y="39" width="69" height="122" fill="url(#doorLight)"/>
-          <path d="M222 39L189 23V179L222 161Z" fill="url(#doorLeaf)" stroke="#ac81df" stroke-width="1.5" stroke-linejoin="round"/>
-          <path d="M215 49L196 40V160L215 151Z" fill="none" stroke="#c29feb" stroke-opacity=".2"/>
-          <path d="M198 104V112" stroke="#e4c6ff" stroke-width="3" stroke-linecap="round"/>
-          <path d="M222 163H297" stroke="#eedcff" stroke-width="2"/>
-          <g class="door-dust" fill="#d9bdff"><circle cx="163" cy="72" r="1.5"/><circle cx="320" cy="110" r="1"/><circle cx="312" cy="42" r="1.5"/><circle cx="154" cy="148" r="1"/></g>
-        </svg>
+    mount(`<div class="commitment-screen"><p class="gradient-eyebrow">YOUR COMMITMENT</p><h1>How committed are you to quitting porn forever?</h1>
+      <div class="commitment-meter" id="commitmentMeter">
+        <div class="commitment-label" id="commitmentLabel">${escapeHTML(commitmentLabel())}</div>
         <div class="commitment-score"><strong id="commitmentNumber">${state.commitment}</strong><span>/ 10</span></div>
       </div>
-      <div class="commitment-label" id="commitmentLabel">${escapeHTML(commitmentLabel())}</div><div class="range-wrap"><input id="commitmentRange" type="range" min="1" max="10" step="1" value="${state.commitment}" aria-label="Commitment from 1 to 10" /><div><span>Just exploring</span><span>Ready to commit</span></div></div>${primaryButton('Take the next step')}</div>`, { className: 'commitment-page' });
+      <div class="range-wrap"><input id="commitmentRange" type="range" min="1" max="10" step="1" value="${state.commitment}" aria-label="Commitment from 1 to 10" /><div><span>Just curious</span><span>Never again</span></div></div>
+      <div class="commitment-actions">${primaryButton('Take the next step')}<div class="dodge-zone"><button class="not-yet-button" type="button">Not yet</button></div></div></div>`, { className: 'commitment-page' });
     const range = document.getElementById('commitmentRange');
-    const journey = document.getElementById('commitmentJourney');
+    const meter = document.getElementById('commitmentMeter');
     const update = () => {
       const progress = (state.commitment - 1) / 9;
+      const color = commitmentColor(progress);
       document.getElementById('commitmentNumber').textContent = state.commitment;
       document.getElementById('commitmentLabel').textContent = commitmentLabel();
-      journey.style.setProperty('--path-remaining', 92 * (1 - progress));
-      journey.style.setProperty('--door-glow', .22 + progress * .78);
-      journey.style.setProperty('--door-light', .5 + progress * .5);
+      meter.style.setProperty('--commitment-progress', progress);
+      meter.style.setProperty('--commitment-color', color);
       range.style.setProperty('--commitment-fill', `${progress * 100}%`);
+      range.style.setProperty('--commitment-color', color);
       range.setAttribute('aria-valuetext', `${state.commitment} out of 10. ${commitmentLabel()}`);
     };
     range.addEventListener('input', () => { state.commitment = Number(range.value); update(); persist(); });
     update();
-    document.getElementById('continueButton').addEventListener('click', () => {
-      const next = state.commitment >= 7 ? 'recommitment' : 'featureProgress';
-      go(next);
-    });
+    document.getElementById('continueButton').addEventListener('click', () => go('name'));
+    const notYet = app.querySelector('.not-yet-button');
+    const dodge = () => {
+      const [x, y] = notYetOffsets[Math.min(state.notYetAttempts, notYetOffsets.length - 1)].split(',');
+      notYet.style.setProperty('--x', x); notYet.style.setProperty('--y', y);
+      notYet.style.setProperty('--scale', Math.max(.44, 1 - state.notYetAttempts * .14));
+      notYet.hidden = state.notYetAttempts >= 5;
+    };
+    notYet.addEventListener('click', () => { state.notYetAttempts += 1; persist(); dodge(); });
+    dodge();
   }
 
-  function showRecommitment() {
-    const offsets = ['0px,0px', '70px,-8px', '-70px,10px', '58px,16px', '-48px,20px'];
-    mount(`<div class="recommitment-screen"><div class="recommit-lock" aria-hidden="true">🚪</div><h1>Your next chapter starts here.</h1><p class="recommit-question">Ready to step through?</p><p class="recommit-copy">Build your RELUSTT plan to <strong class="recommit-impact">leave porn behind</strong>, with <em class="recommit-urge">support when urges hit.</em></p>
-      <div class="recommit-actions">${primaryButton('Yes, take the next step', 'confirmCommitment', '→')}<div class="dodge-zone" id="dodgeZone"><button class="not-yet-button" type="button">Not yet</button></div></div></div>`, { back: false, className: 'recommitment-page' });
-    document.getElementById('confirmCommitment').addEventListener('click', () => go('featureProgress'));
-    const button = app.querySelector('.not-yet-button');
-    const updateButton = () => {
-      const [x, y] = offsets[Math.min(state.notYetAttempts, offsets.length - 1)].split(',');
-      button.style.setProperty('--x', x); button.style.setProperty('--y', y);
-      button.style.setProperty('--scale', Math.max(.44, 1 - state.notYetAttempts * .14));
-      button.hidden = state.notYetAttempts >= 5;
-    };
-    button.addEventListener('click', () => { state.notYetAttempts += 1; persist(); updateButton(); });
-    updateButton();
-  }
 
   function showName() {
     mount(`<div class="form-screen name-screen"><h1>We haven't gotten your name yet, Warrior.</h1><p class="form-copy">What should we call you?</p>
@@ -1048,53 +1018,60 @@
     switch (state.screen) {
       case 'welcome': return showWelcome();
       case 'frequency': return showQuestion({ title: 'How often do you currently watch porn?', options: ['Daily', 'A few times a week', 'A few times a month', 'Already trying to cut back'], selected: state.frequency }, (a) => { state.frequency = a; go('motivation'); });
-      case 'motivation': return showQuestion({ title: 'What do you usually turn to porn for?', helper: 'Think about the past month. Choose the main reason.', options: ['Sexual pleasure', 'Relieving stress', 'Escaping difficult feelings', 'Filling time when bored', 'It feels automatic', 'Something else or not sure'], selected: state.motivation }, (a) => { state.motivation = a; go('urgeContext'); });
+      case 'motivation': return showQuestion({ title: 'What do you usually turn to porn for?', helper: 'Think about the past month. Choose the main reason.', options: ['Sexual pleasure', 'Relieving stress', 'Escaping difficult feelings', 'Filling time when bored', 'It feels automatic', 'Something else or not sure'], selected: state.motivation }, (a) => { state.motivation = a; go('triedQuit'); });
       case 'urgeContext': return showQuestion({ title: 'When is it hardest to resist?', helper: 'Choose the situation that fits you most often.', options: ['Alone at night', 'While scrolling on my phone', 'When putting off a task', 'After a difficult day', 'It varies', 'Not sure'], selected: state.urgeContext }, (a) => { state.urgeContext = a; go('obstacle'); });
       case 'watchControl': return showQuestion({ title: 'How often do you watch longer than you intended?', helper: 'Think about the past month.', options: ['Never', 'Rarely', 'Sometimes', 'Often', 'Very often', "I haven't watched in the past month"], selected: state.watchControl }, (a) => { state.watchControl = a; go('changePriority'); });
       case 'changePriority': return showQuestion({ title: 'What would you most like to change?', helper: 'Choose your main priority. Your plan can support more than one goal.', options: ['Control over the habit', 'More time and focus', 'Feeling better about myself', 'Closer relationships', 'Confidence in intimacy'], selected: state.changePriority }, (a) => { state.changePriority = a; go('fork'); });
-      case 'fork': return showQuestion({ title: 'Have you struggled to get or keep an erection with a partner?', options: ['Yes', 'No', "I haven't been intimate with a partner yet"], selected: state.forkAnswer, helper: 'Answer honestly.' }, (a) => { state.forkAnswer = a; state.performanceExperience = ''; state.intimacyConcern = ''; if (a === 'Yes') { state.pathway = 'performance'; go('bRelationshipImpact'); } else if (a === 'No') { state.pathway = 'identity'; go(quitEntry()); } else go('forkConcern'); });
-      case 'forkConcern': return showQuestion({ title: "Are you worried this might happen when you're with a partner?", options: ['Yes', 'No'], selected: state.intimacyConcern }, (a) => { state.intimacyConcern = a; state.pathway = 'identity'; go(a === 'Yes' ? 'forkConcernInfo' : quitEntry()); });
+      case 'fork': return showQuestion({ title: 'Have you struggled to get or keep an erection with a partner?', options: ['Yes', 'No', "I haven't been intimate with a partner yet"], selected: state.forkAnswer, helper: 'Answer honestly.' }, (a) => { state.forkAnswer = a; state.performanceExperience = ''; state.intimacyConcern = ''; if (a === 'Yes') { state.pathway = 'performance'; go('bCauseInfo'); } else if (a === 'No') { state.pathway = 'identity'; go(setbackEntry()); } else go('forkConcern'); });
+      case 'forkConcern': return showQuestion({ title: "Are you worried this might happen when you're with a partner?", options: ['Yes', 'No'], selected: state.intimacyConcern }, (a) => { state.intimacyConcern = a; state.pathway = 'identity'; go(a === 'Yes' ? 'forkConcernInfo' : setbackEntry()); });
       // Worry without experience gets reassurance, then the regular path. It is not a performance case.
-      case 'forkConcernInfo': return showInsight({ eyebrow: 'A COMMON WORRY', title: "That worry is more common than you think.", message: "A lot of guys put off dating or avoid intimacy because they're afraid of how it might go. That fear usually comes from the gap between what porn has trained your brain to expect and what a real moment feels like. As you step away from porn, that gap closes and the confidence comes back.", takeaway: 'The fear is learned. It can be unlearned.', visual: 'unlock', accent: 'cyan', buttonTitle: 'Got it' }, () => go(quitEntry()));
-      case 'bRelationshipImpact': return showQuestion({ title: 'Has it affected a relationship, or made you avoid intimacy?', options: ["Yes, it's affected a relationship", "No, I'm not in a relationship right now", "I avoid dating or relationships because I'm scared to perform"], selected: state.relationshipImpact }, (a) => { state.relationshipImpact = a; go('bCauseInfo'); });
+      case 'forkConcernInfo': return showInsight({ eyebrow: 'A COMMON WORRY', title: "That worry is more common than you think.", message: "A lot of guys put off dating or avoid intimacy because they're afraid of how it might go. That fear usually comes from the gap between what porn has trained your brain to expect and what a real moment feels like. As you step away from porn, that gap closes and the confidence comes back.", takeaway: 'The fear is learned. It can be unlearned.', visual: 'unlock', accent: 'cyan', buttonTitle: 'Got it' }, () => go(setbackEntry()));
       case 'bCauseInfo': return showInsight({ title: 'Porn can train your brain to prefer screens.', message: 'Porn can shape what you associate with arousal, which may contribute to anxiety during real-life intimacy.', takeaway: 'What your brain learned, it can relearn.', visual: 'brain', accent: 'violet', buttonTitle: 'That makes sense' }, () => go('bIntensity'));
       case 'bIntensity': return showQuestion({ title: 'Do you need more extreme content to get the same effect?', options: ['Yes', 'A little', 'No'], selected: state.contentIntensity }, (a) => { state.contentIntensity = a; go('bGapInfo'); });
-      case 'bGapInfo': return showInsight({ title: 'Your arousal threshold rises.', message: "A gap between porn and real intimacy may contribute to anxiety with a partner. We'll help you work on it.", takeaway: 'Less pressure. More confidence with a partner.', visual: 'threshold', accent: 'cyan', buttonTitle: 'I understand' }, () => go(quitEntry()));
+      case 'bGapInfo': return showInsight({ title: 'Your arousal threshold rises.', message: "A gap between porn and real intimacy may contribute to anxiety with a partner. We'll help you work on it.", visual: 'threshold', accent: 'cyan', buttonTitle: 'I understand' }, () => go(setbackEntry()));
+      case 'triedQuit': return showQuestion({ title: 'Have you tried to quit or cut back before?', options: ['Yes', 'No'], selected: state.triedQuit, binary: true }, (a) => {
+        state.triedQuit = a;
+        if (a === 'No') { state.quitProgress = ''; state.setbackTrigger = ''; }
+        go(a === 'Yes' ? 'quitProgress' : 'quitFeedback');
+      });
       case 'quitProgress': {
         if (state.triedQuit !== 'Yes') { state.screen = 'quitFeedback'; writeRoute('replace'); persist(); return render(); }
         return showQuestion({ title: "How's that been going?", options: ["Good, I've made real progress", 'Not great, I keep relapsing', 'On and off'], selected: state.quitProgress, helper: 'Be honest with yourself.' }, (a) => { state.quitProgress = a; go('quitFeedback'); });
       }
       case 'setbackTrigger': {
-        if (state.triedQuit !== 'Yes') { state.screen = 'quitFeedback'; writeRoute('replace'); persist(); return render(); }
-        return showQuestion({ title: 'What usually brings you back after trying to stop?', helper: 'Choose the biggest obstacle, if you have run into one.', options: ['Stress or difficult feelings', 'Easy access in the moment', 'Not knowing what to do instead', 'One setback makes me give up', "I haven't returned to it", 'Something else or not sure'], selected: state.setbackTrigger }, (a) => { state.setbackTrigger = a; go('supportPreference'); });
+        if (state.triedQuit !== 'Yes') { state.screen = 'supportPreference'; writeRoute('replace'); persist(); return render(); }
+        return showQuestion({ title: 'What usually brings you back after trying to stop?', helper: 'Choose the biggest obstacle, if you have run into one.', options: ['Stress or difficult feelings', 'Easy access in the moment', 'Not knowing what to do instead', "I haven't returned to it"], selected: state.setbackTrigger }, (a) => { state.setbackTrigger = a; go('supportPreference'); });
       }
-      case 'supportPreference': return showQuestion({ title: 'What support would you feel comfortable using?', helper: 'Choose what you would be most likely to turn to.', options: ['Private guidance on my own', 'An anonymous community', 'Someone I trust', "I'm not sure yet"], selected: state.supportPreference }, (a) => { state.supportPreference = a; go('supportInfo'); });
+      case 'supportPreference': return showQuestion({ title: 'What kind of support would help you most?', options: Object.keys(supportFeatures), selected: state.supportPreference }, (a) => {
+        state.supportPreference = a;
+        state.safeWordReturn = state.pathway === 'performance' ? 'commitmentPerformance' : 'commitmentIdentity';
+        go('supportBridge');
+      });
+      case 'supportBridge': return showTypedBridge({ lines: ['Good news.'], next: pickedFeature() === 'blocker' ? 'safeWordIntro' : 'featureSpotlight' });
+      case 'featureSpotlight': return showFeatureSpotlight();
+      // Only people who did not ask for the blocker get it introduced as the extra.
+      case 'blockerBridge': return showTypedBridge({ lines: ['One more big thing.'], next: 'safeWordIntro' });
       case 'quitFeedback': {
-        const nextQuestion = 'supportPreference';
-        if (state.triedQuit === 'No') return showInsight({ title: 'This is where you start.', message: "Never having tried before isn't a disadvantage. It just means you haven't had the right structure yet. Here's where we come in: RELUSTT blocks the sites for you. To turn them back on, you'll need your safe word.", takeaway: 'Build the structure before you need it.', visual: 'plant', accent: 'mint', buttonTitle: 'Build my system' }, () => startSafeWord(nextQuestion));
-        const good = state.quitProgress.startsWith('Good');
-        return showInsight({ title: good ? "You've built real momentum." : "Your willpower isn't the problem.", message: good ? "That's more than most people manage on their own. Let's build on it." : "Breaking this habit is hard with willpower alone. You need a system for when urges hit.", takeaway: good ? 'RELUSTT turns progress into consistency.' : 'RELUSTT is that system.', visual: good ? 'trophy' : 'plant', accent: good ? 'mint' : 'violet', buttonTitle: good ? 'Protect my progress' : 'Build my system' }, () => go('setbackTrigger'));
+        const reflection = state.triedQuit === 'No'
+          ? { title: 'This is where you start.', message: "Never having tried isn't a disadvantage. It just means you haven't had the right structure yet.", takeaway: 'Build the structure before you need it.', visual: 'plant', accent: 'mint', buttonTitle: 'Build my system' }
+          : {
+            "Good, I've made real progress": { title: "You've built real momentum.", message: "That's more than most people manage on their own. Now you protect it.", takeaway: 'RELUSTT turns progress into consistency.', visual: 'trophy', accent: 'mint', buttonTitle: 'Protect my progress' },
+            'On and off': { title: 'On and off means it already works.', message: 'The effort was never missing. Nothing held the line when your motivation dipped.', takeaway: 'RELUSTT holds the line for you.', visual: 'plant', accent: 'violet', buttonTitle: 'Build my system' },
+            'Not great, I keep relapsing': { title: 'This is what willpower alone looks like.', message: 'Nothing stood between you and one tap. That is a structure problem, not a you problem.', takeaway: 'RELUSTT is that structure.', visual: 'plant', accent: 'violet', buttonTitle: 'Build my system' },
+          }[state.quitProgress] || { title: "Your willpower isn't the problem.", message: 'Breaking this habit is hard with willpower alone. You need a system for when urges hit.', takeaway: 'RELUSTT is that system.', visual: 'plant', accent: 'violet', buttonTitle: 'Build my system' };
+        return showInsight({ eyebrow: 'WHAT WE HEARD', ...reflection }, () => go('urgeContext'));
       }
       case 'obstacle': return showQuestion({ eyebrow: "WHAT'S IN THE WAY", title: "What's stopping you from quitting right now?", options: ["The habit's stronger than my willpower", "I don't know where to start", "I've tried and failed before", "Honestly, I haven't tried"], selected: state.obstacle }, (a) => {
         state.obstacle = a;
-        // The obstacle answer doubles as quit history; "haven't tried" and "don't know where to start" mean no previous attempt.
-        state.triedQuit = ["Honestly, I haven't tried", "I don't know where to start"].includes(a) ? 'No' : 'Yes';
-        if (state.triedQuit === 'No') { state.quitProgress = ''; state.setbackTrigger = ''; }
         go('obstacleInfo');
       });
       case 'obstacleInfo': return obstacleInsight();
-      case 'obstacleBridge': return showTypedBridge({ line: 'First, a few quick questions so your system fits you.', next: 'watchControl' });
-      case 'supportInfo': {
-        const trusted = state.supportPreference === 'Someone I trust';
-        return showInsight({ eyebrow: "YOU DON'T HAVE TO CARRY IT ALONE", title: trusted ? 'Shared weight becomes lighter.' : 'Shame grows in secrecy.', message: trusted ? "Telling someone you trust is a strong move. There's an old saying: a joy shared is doubled, a sorrow shared is halved. Carrying this alone makes it heavier than it has to be." : "There's no need to be ashamed of this. A lot of guys are dealing with exactly this, in exactly this kind of secrecy. You're not the only one, even though it feels that way.", takeaway: 'This is a learned response, and learned responses can change.', visual: trusted ? 'people' : 'unlock', accent: 'cyan', buttonTitle: 'Continue' }, () => routeToBlockerCatchUp());
-      }
+      case 'obstacleBridge': return showTypedBridge({ lines: ["We're almost there.", 'A few more answers so we can build the right system for you.'], next: 'watchControl' });
       case 'safeWordIntro': return showInsight({ title: 'RELUSTT blocks adult sites automatically.', message: 'Adult sites stay out of reach, even when urges hit. Add any other site you want to block.', takeaway: 'Blocking can only be turned off with the safe word you create.', visual: 'blocker', accent: 'mint', buttonTitle: 'Create my safe word' }, () => go('safeWordEntry'));
       case 'safeWordEntry': return showSafeWordEntry();
       case 'blockerLive': return showBlockerReady();
       case 'blockerReminder': return showBlockerReminder();
-      case 'featureProgress': case 'featureCommunity': case 'featureSupport': case 'featureLessons': return showFeature(state.screen);
       case 'commitmentPerformance': case 'commitmentIdentity': return showCommitment();
-      case 'recommitment': return showRecommitment();
       case 'name': return showName();
       case 'pledge': return showPledge();
       case 'planAnalysis': return showPlanAnalysis();
