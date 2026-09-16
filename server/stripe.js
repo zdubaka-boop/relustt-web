@@ -1,5 +1,9 @@
 const crypto = require('node:crypto');
-const { required } = require('./env');
+const { ConfigurationError, required } = require('./env');
+
+const FUNNEL_INTRO_AMOUNTS = new Set([500, 900, 1300, 1767]);
+const FUNNEL_MONTHLY_AMOUNT = 2950;
+const FUNNEL_INTRO_DAYS = 7;
 
 async function stripeRequest(path, { method = 'GET', form } = {}) {
   const response = await fetch(`https://api.stripe.com/v1${path}`, {
@@ -19,7 +23,25 @@ async function stripeRequest(path, { method = 'GET', form } = {}) {
   return payload;
 }
 
-function createCheckoutSession({ priceId, claimId, successUrl, cancelUrl, trialDays = null }) {
+async function createCheckoutSession({ priceId, introAmountCents, claimId, successUrl, cancelUrl }) {
+  const isIntroductoryPlan = introAmountCents !== undefined;
+  if (isIntroductoryPlan) {
+    if (!FUNNEL_INTRO_AMOUNTS.has(introAmountCents)) {
+      throw new Error('Invalid introductory amount.');
+    }
+    // Refuse a misconfigured Price rather than charge a different renewal than the offer.
+    const price = await stripeRequest(`/prices/${encodeURIComponent(priceId)}`);
+    if (
+      !price.active || price.currency !== 'usd' || price.unit_amount !== FUNNEL_MONTHLY_AMOUNT ||
+      price.type !== 'recurring' || price.billing_scheme !== 'per_unit' || price.transform_quantity ||
+      price.recurring?.interval !== 'month' || price.recurring?.interval_count !== 1 ||
+      price.recurring?.usage_type !== 'licensed'
+    ) {
+      const error = new ConfigurationError('STRIPE_PRICE_FUNNEL_MONTHLY');
+      error.message = 'STRIPE_PRICE_FUNNEL_MONTHLY must be an active, flat USD 29.50 monthly Price.';
+      throw error;
+    }
+  }
   const form = new URLSearchParams();
   form.set('mode', 'subscription');
   form.set('line_items[0][price]', priceId);
@@ -29,8 +51,26 @@ function createCheckoutSession({ priceId, claimId, successUrl, cancelUrl, trialD
   form.set('client_reference_id', claimId);
   form.set('metadata[purchase_claim_id]', claimId);
   form.set('subscription_data[metadata][purchase_claim_id]', claimId);
-  if (trialDays) form.set('subscription_data[trial_period_days]', String(trialDays));
-  form.set('allow_promotion_codes', 'true');
+  if (isIntroductoryPlan) {
+    // The recurring item is delayed for seven days. This separate one-time item
+    // is invoiced immediately, so the introductory week is paid, not free.
+    form.set('subscription_data[trial_period_days]', String(FUNNEL_INTRO_DAYS));
+    form.set('line_items[1][price_data][currency]', 'usd');
+    form.set('line_items[1][price_data][unit_amount]', String(introAmountCents));
+    form.set('line_items[1][price_data][product_data][name]', 'RELUSTT: first 7 days');
+    form.set('line_items[1][price_data][product_data][description]', 'Full RELUSTT access for your paid introductory week.');
+    form.set('line_items[1][quantity]', '1');
+    form.set('payment_method_collection', 'always');
+    // Card payments settle before the existing synchronous activation flow.
+    form.set('payment_method_types[0]', 'card');
+    form.set('allow_promotion_codes', 'false');
+    form.set('custom_text[submit][message]', `$${(introAmountCents / 100).toFixed(2)} today for 7 days, then $29.50 every month until canceled.`);
+    form.set('metadata[intro_amount_cents]', String(introAmountCents));
+    form.set('subscription_data[metadata][intro_amount_cents]', String(introAmountCents));
+    form.set('subscription_data[metadata][offer]', 'paid_week_then_monthly');
+  } else {
+    form.set('allow_promotion_codes', 'true');
+  }
   return stripeRequest('/checkout/sessions', { method: 'POST', form });
 }
 

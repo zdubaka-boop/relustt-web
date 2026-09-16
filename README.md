@@ -64,10 +64,7 @@ STRIPE_SECRET_KEY
 STRIPE_WEBHOOK_SECRET
 STRIPE_PRICE_MONTHLY
 STRIPE_PRICE_YEARLY
-STRIPE_PRICE_TIER_5
-STRIPE_PRICE_TIER_9
-STRIPE_PRICE_TIER_1499
-STRIPE_PRICE_TIER_2999
+STRIPE_PRICE_FUNNEL_MONTHLY
 WEB_PLAN_MONTHLY_LABEL
 WEB_PLAN_YEARLY_LABEL
 ```
@@ -119,10 +116,70 @@ Never expose `SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_SECRET_KEY`, or
 - The iOS app unlocks for `active` or `trialing` web plans that have not expired.
 - Existing App Store customers remain authorized by RevenueCat.
 
-The four funnel Price IDs correspond to the quarterly renewal choices shown on
-the personalized paywall: `$5`, `$9`, `$14.99`, and `$29.99`. Funnel checkout
-adds the advertised seven-day trial. Stripe remains the source of truth for
-the recurring amount and interval.
+### Funnel billing: paid introductory week
+
+The user confirmed on 2026-09-15: charge the selected `$5`, `$9`, `$13`, or
+`$17.67` today for the first **7 days**, then **$29.50 every month** until
+canceled. The 90-day plan is the program length, not a prepaid 90-day billing
+period. The on-page seven-minute timer does not change these charges.
+
+Set `STRIPE_PRICE_FUNNEL_MONTHLY` to an active USD **$29.50/month** Stripe Price
+with interval count 1, per-unit billing, and licensed usage. Checkout retrieves
+and verifies these fields before creating a session; a mismatched Price is
+rejected. The old `STRIPE_PRICE_TIER_*` variables are no longer used by the funnel.
+The separate legacy `/checkout` monthly/yearly plans keep their existing IDs.
+
+The funnel Checkout Session combines a recurring line item with
+`subscription_data.trial_period_days=7` and a **one-time, nonzero line item** for
+the selected introductory amount. That one-time item is invoiced immediately;
+only the recurring $29.50 charge is delayed. The introductory week is paid,
+although Stripe internally reports the initial subscription status as `trialing`.
+The API accepts only the four tier identifiers and determines amounts on the
+server. Funnel promotion codes are disabled. Card payments are used with the
+existing synchronous purchase activation flow.
+
+Implementation references: [Stripe Checkout line items](https://docs.stripe.com/api/checkout/sessions/create)
+and [combining trials with one-time items](https://docs.stripe.com/billing/subscriptions/trials?locale=en-GB).
+
+Run `node --test tests/stripe-checkout.test.cjs` for isolated payload/configuration
+checks. No real payment has been tested. Before launch, configure Stripe in test
+mode and verify the selected amount due now, the renewal date and $29.50 monthly
+amount, payment failure/cancellation, account activation, and iOS entitlement.
+Set the account's statement descriptor to `RELUSTT` and replace the preview
+contact/policy details with published support and subscription terms.
+
+### Personalized final offer
+
+Open `funnel.html?step=your-plan` (add `&path=performance` for that branch).
+The page presents an answer-based archetype with an animated emblem,
+the selected introductory offer, a blurred
+preview, three existing site testimonials, FAQs, and return-to-offer buttons.
+See [Quiz archetypes](FUNNEL_ARCHETYPES.md) for the six profiles, assignment
+logic, copy decisions, and tests. The resolver is `funnel-archetypes.js`.
+
+Answers and the name persist in session storage in the same browser tab. The
+intimacy-concern follow-up is now explicitly saved too. Answers are not stored
+on the server or transferred to the iOS app; safe words and signatures remain
+memory-only. Checkout sends only the selected tier and pathway.
+
+The seven-minute display timer starts on the first offer visit, survives reload
+in the same tab, shifts from green to red, and stays at `00:00`. Per the user's
+decision, expiry does not change the price or disable checkout. It is not an
+enforced discount deadline. Start over clears both quiz answers and the timer.
+
+The roadmap is a planning framework, not a clinical recovery prediction. The
+blurred passage is a visual teaser, not access-controlled content. No new review
+claims were added; verify the provenance of the retained reviews before launch.
+`example@gmail.com` remains the requested contact placeholder. The web refund
+policy is awaiting the user's decision; the app's Apple-specific guarantee is
+not automatically applied. The offer's subscription dialog uses the confirmed
+web prices; the standalone Terms page still needs a complete web-billing review.
+Privacy copy now describes the implemented browser storage and Stripe handoff.
+
+Archetype checks: `node tests/funnel-archetypes.test.cjs`.
+Browser regression scripts: `tests/funnel-flow.browser.js` and
+`tests/funnel-offer.browser.js`. Run in a local same-origin browser using
+`agent-browser eval --stdin`; they preserve and restore the tab's saved answers.
 
 ## Page sections
 
@@ -166,7 +223,7 @@ gitignored—run `vercel link` after cloning to reconnect.
 - Contact address on About / Privacy / Terms is a personal Gmail. Swap to a `@relustt.site` alias once mail forwarding is set up at GoDaddy.
 - Privacy Policy describes the AI coach sending messages off-device and lists analytics/crash reporting. **Confirm this matches what the app actually does** before relying on it.
 - Footer TikTok / Instagram / X icons are `href="#"` placeholders — handles not yet decided.
-- Funnel checkout cannot run until the four `STRIPE_PRICE_TIER_*` variables are supplied.
+- Funnel checkout cannot run until `STRIPE_PRICE_FUNNEL_MONTHLY` is configured with the verified $29.50 monthly Price.
 - Apple/Google login cannot run until both providers and redirect URLs are enabled in Supabase.
 - The migration must be pushed to the linked Supabase project.
 

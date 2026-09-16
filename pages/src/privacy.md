@@ -2,7 +2,7 @@
 title: "Privacy Policy"
 slug: privacy
 description: "How Relustt handles your data: what stays on your device, what we collect, who we share it with, and the rights you have over it."
-date: 2026-09-14
+date: 2026-09-15
 ---
 
 This policy explains what Relustt does with your information, covering both this website and the Relustt iPhone app.
@@ -39,6 +39,7 @@ Many competing products work by routing all of your traffic through their server
 **Information you give us**
 
 - **Account details** if you create an account, such as an email address.
+- **Web quiz answers and name** are stored in your browser tab's session storage to personalize the funnel and keep your progress on reload. The quiz does not send these answers to our server. Start over clears them. The safe word and drawn signature stay in page memory and are not saved in session storage or sent with checkout.
 - **Recovery data you enter in the app**: clean-day streaks, urge logs, check-ins, and lesson progress.
 - **Messages you send us** for support, and posts you make in community features.
 - **Conversations with the in-app AI coach.** Unlike the blocker, the AI coach requires sending your messages off the device to generate a reply. Those messages are processed by a third-party AI provider under contract and are used to produce your response.
@@ -69,13 +70,14 @@ We do not use your recovery data to build advertising profiles, and we do not ru
 
 ## Payments
 
-Subscriptions are purchased and processed through **Apple's App Store**. We never see or store your card number or billing details. Apple provides us with subscription status so we know whether your access is active. Apple's handling of your payment information is governed by Apple's own privacy policy.
+In-app purchases are processed through **Apple's App Store**. Web purchases are processed through **Stripe Checkout**. We do not receive or store your full card number. Stripe provides payment and subscription information so we can activate and manage your access, including customer, checkout, and subscription identifiers and subscription status. A temporary browser cookie links your web purchase to the account you activate. Quiz answers and your safe word are not sent to Stripe. Each payment provider handles your payment information under its own privacy policy.
 
 ## Who we share it with
 
 We share information only with service providers who help us run the product, and only what they need:
 
 - **Apple** — app distribution, subscription processing.
+- **Stripe** — processing web payments and managing web subscriptions.
 - **Hosting and infrastructure providers** — running this website and our backend.
 - **An AI provider** — generating responses in the in-app coach, when you use it.
 - **Analytics and crash reporting providers** — aggregate product usage and stability.

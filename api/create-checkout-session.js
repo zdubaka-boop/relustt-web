@@ -8,26 +8,31 @@ const { methodNotAllowed, parseJsonBody, sendJson } = require('../server/http');
 const { insertClaim, updateClaim } = require('../server/supabase');
 const { createCheckoutSession } = require('../server/stripe');
 
-const PRICE_ENV_BY_PLAN = {
+const PRICE_ENV_BY_PLAN = Object.freeze({
   monthly: 'STRIPE_PRICE_MONTHLY',
   yearly: 'STRIPE_PRICE_YEARLY',
-  tier_5: 'STRIPE_PRICE_TIER_5',
-  tier_9: 'STRIPE_PRICE_TIER_9',
-  tier_1499: 'STRIPE_PRICE_TIER_1499',
-  tier_2999: 'STRIPE_PRICE_TIER_2999',
-};
+});
+// Amounts are cents and are selected on the server, never supplied by the client.
+const INTRO_AMOUNT_BY_PLAN = Object.freeze({
+  tier_5: 500,
+  tier_9: 900,
+  tier_13: 1300,
+  tier_1767: 1767,
+});
 
 module.exports = async function handler(request, response) {
   if (request.method !== 'POST') return methodNotAllowed(response, ['POST']);
 
   try {
-    const { plan } = parseJsonBody(request);
-    const priceEnvironmentName = PRICE_ENV_BY_PLAN[plan];
-    if (!priceEnvironmentName) {
+    const { plan, pathway } = parseJsonBody(request);
+    const isIntroductoryPlan = typeof plan === 'string' && Object.hasOwn(INTRO_AMOUNT_BY_PLAN, plan);
+    const isLegacyPlan = typeof plan === 'string' && Object.hasOwn(PRICE_ENV_BY_PLAN, plan);
+    if (!isIntroductoryPlan && !isLegacyPlan) {
       return sendJson(response, 400, { error: 'Choose a valid plan.' });
     }
 
-    const priceId = required(priceEnvironmentName);
+    const priceId = required(isIntroductoryPlan ? 'STRIPE_PRICE_FUNNEL_MONTHLY' : PRICE_ENV_BY_PLAN[plan]);
+    const returnPathway = pathway === 'performance' ? '&path=performance' : '';
     const claim = newClaimCredentials();
     await insertClaim({
       id: claim.id,
@@ -37,10 +42,12 @@ module.exports = async function handler(request, response) {
     const origin = siteUrl();
     const checkoutSession = await createCheckoutSession({
       priceId,
+      ...(isIntroductoryPlan ? { introAmountCents: INTRO_AMOUNT_BY_PLAN[plan] } : {}),
       claimId: claim.id,
       successUrl: `${origin}/activate?session_id={CHECKOUT_SESSION_ID}`,
-      cancelUrl: `${origin}/${plan.startsWith('tier_') ? 'funnel' : 'checkout'}?cancelled=1`,
-      trialDays: plan.startsWith('tier_') ? 7 : null,
+      cancelUrl: isIntroductoryPlan
+        ? `${origin}/funnel.html?step=your-plan${returnPathway}&cancelled=1`
+        : `${origin}/checkout?cancelled=1`,
     });
 
     await updateClaim(claim.id, {
