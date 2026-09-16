@@ -10,7 +10,7 @@
     fork: 'intimacy', forkConcern: 'intimacy-concern', forkConcernInfo: 'intimacy-worry',
     bRelationshipImpact: 'relationship-impact', bCauseInfo: 'brain-conditioning',
     bIntensity: 'performance-content-intensity', bGapInfo: 'arousal-threshold',
-    quitProgress: 'quit-progress', quitFeedback: 'quit-feedback', setbackTrigger: 'setback-trigger',
+    triedQuit: 'quit-history', quitProgress: 'quit-progress', quitFeedback: 'quit-feedback', setbackTrigger: 'setback-trigger',
     supportPreference: 'support-preference', supportInfo: 'shared-support',
     safeWordIntro: 'blocker-introduction', safeWordEntry: 'safe-word', blockerLive: 'blocker-ready', blockerReminder: 'blocker-reminder',
     featureProgress: 'progress', featureCommunity: 'community', featureSupport: 'ai-support',
@@ -258,12 +258,89 @@
     </div>`;
   }
 
+  // Animated inline SVG scenes for the obstacle insight. Each one draws the idea in
+  // the copy above it: willpower draining while a system holds, a route that maps
+  // itself, a climb whose falls are caught, and a first step lighting up.
+  function obstacleVisual(kind) {
+    const defs = `<defs>
+      <linearGradient id="ovStroke" x1="0" y1="1" x2="1" y2="0"><stop stop-color="#a16eff"/><stop offset="1" stop-color="#8cebcf"/></linearGradient>
+      <linearGradient id="ovFill" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#d2b6ff"/><stop offset="1" stop-color="#6333eb"/></linearGradient>
+      <linearGradient id="ovBeam" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#c9a6ff" stop-opacity=".38"/><stop offset="1" stop-color="#c9a6ff" stop-opacity="0"/></linearGradient>
+      <radialGradient id="ovAura"><stop stop-color="#b18aff" stop-opacity=".5"/><stop offset="1" stop-color="#8750ef" stop-opacity="0"/></radialGradient>
+      <filter id="ovBlur" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="7"/></filter>
+    </defs>`;
+    const label = (x, y, text, anchor = 'middle') => `<text class="ov-label" x="${x}" y="${y}" text-anchor="${anchor}">${text}</text>`;
+    if (kind === 'system') {
+      const hex = 'M52 0 26 45 -26 45 -52 0 -26 -45 26 -45Z';
+      const spokes = [[52, 0], [26, 45], [-26, 45], [-52, 0], [-26, -45], [26, -45]];
+      return `<svg class="obstacle-visual ov-system" viewBox="0 0 360 220" aria-hidden="true">${defs}
+        <ellipse class="ov-aura" cx="250" cy="106" rx="120" ry="84" fill="url(#ovAura)"/>
+        <g class="ov-gauge" transform="translate(66 34)">
+          <rect class="ov-gauge-cap" x="15" y="-8" width="14" height="8" rx="3"/>
+          <rect class="ov-gauge-shell" x="0" y="0" width="44" height="128" rx="14"/>
+          <rect class="ov-gauge-fill" x="6" y="6" width="32" height="116" rx="10"/>
+          <rect class="ov-gauge-sheen" x="10" y="12" width="6" height="104" rx="3"/>
+          ${label(22, 156, 'WILLPOWER')}
+        </g>
+        <g class="ov-lattice" transform="translate(250 104)">
+          <path class="ov-hex ov-hex-glow" d="${hex}" pathLength="1"/>
+          <path class="ov-hex" d="${hex}" pathLength="1"/>
+          ${spokes.map(([x, y], i) => `<line class="ov-spoke" style="--i:${i}" x1="0" y1="0" x2="${x}" y2="${y}" pathLength="1"/>`).join('')}
+          ${spokes.map(([x, y], i) => `<circle class="ov-node" style="--i:${i}" cx="${x}" cy="${y}" r="4"/>`).join('')}
+          <circle class="ov-core-halo" r="22" filter="url(#ovBlur)"/>
+          <circle class="ov-core-ring" r="15"/>
+          <circle class="ov-core" r="8"/>
+          ${label(0, 86, 'YOUR SYSTEM')}
+        </g>
+      </svg>`;
+    }
+    if (kind === 'path') {
+      const route = 'M40 170C90 170 100 110 150 110S210 60 250 60S300 40 320 44';
+      const stops = [[150, 110, 1], [250, 60, 2], [320, 44, 3]];
+      return `<svg class="obstacle-visual ov-path" viewBox="0 0 360 220" aria-hidden="true">${defs}
+        <g class="ov-grid">${[40, 80, 120, 160, 200].map(y => `<path d="M0 ${y}H360"/>`).join('')}${[60, 120, 180, 240, 300].map(x => `<path d="M${x} 0V220"/>`).join('')}</g>
+        <ellipse class="ov-aura" cx="290" cy="60" rx="90" ry="60" fill="url(#ovAura)"/>
+        <path class="ov-route-ghost" d="${route}"/>
+        <path class="ov-route-glow" d="${route}" pathLength="1" filter="url(#ovBlur)"/>
+        <path id="ovRoute" class="ov-route" d="${route}" pathLength="1"/>
+        <g class="ov-start" transform="translate(40 170)"><circle class="ov-ring" r="9"/><circle class="ov-dot" r="5"/></g>
+        ${stops.map(([x, y, n], i) => `<g transform="translate(${x} ${y})"><g class="ov-stop" style="--i:${i}"><circle class="ov-stop-halo" r="18" filter="url(#ovBlur)"/><circle class="ov-stop-disc" r="12"/><text class="ov-stop-number" text-anchor="middle" y="4">${n}</text></g></g>`).join('')}
+        <g class="ov-traveller"><circle class="ov-traveller-glow" r="10" filter="url(#ovBlur)"/><circle class="ov-traveller-dot" r="5"/><animateMotion dur="3.2s" begin="0.3s" fill="freeze" calcMode="spline" keySplines="0.4 0 0.2 1" keyTimes="0;1" keyPoints="0;1"><mpath href="#ovRoute"/></animateMotion></g>
+        ${label(40, 196, 'YOU ARE HERE')}${label(320, 24, 'YOUR PLAN')}
+      </svg>`;
+    }
+    if (kind === 'catch') {
+      const climb = 'M30 172C60 158 90 128 120 118L128 148C160 132 182 104 210 96L218 126C250 106 292 68 330 42';
+      return `<svg class="obstacle-visual ov-catch" viewBox="0 0 360 220" aria-hidden="true">${defs}
+        <ellipse class="ov-aura" cx="300" cy="56" rx="90" ry="64" fill="url(#ovAura)"/>
+        <path class="ov-floor" d="M20 200H340"/>
+        <g class="ov-ghosts"><path class="ov-ghost" d="M120 118L134 200"/><path class="ov-ghost" style="--i:1" d="M210 96L226 200"/></g>
+        <g transform="translate(128 148)"><g class="ov-rail" style="--i:0"><rect class="ov-rail-glow" x="-22" y="-4" width="44" height="8" rx="4" filter="url(#ovBlur)"/><rect class="ov-rail-bar" x="-20" y="-2" width="40" height="4" rx="2"/></g></g>
+        <g transform="translate(218 126)"><g class="ov-rail" style="--i:1"><rect class="ov-rail-glow" x="-22" y="-4" width="44" height="8" rx="4" filter="url(#ovBlur)"/><rect class="ov-rail-bar" x="-20" y="-2" width="40" height="4" rx="2"/></g></g>
+        <path class="ov-climb-glow" d="${climb}" pathLength="1" filter="url(#ovBlur)"/>
+        <path class="ov-climb" d="${climb}" pathLength="1"/>
+        <g class="ov-summit" transform="translate(330 42)"><circle class="ov-ring" r="10"/><circle class="ov-dot" r="6"/></g>
+        ${label(30, 214, 'BEFORE', 'start')}${label(330, 214, 'WITH STRUCTURE', 'end')}
+      </svg>`;
+    }
+    const steps = [[46, 150, 1], [136, 118, .55], [226, 86, .32]];
+    return `<svg class="obstacle-visual ov-first-step" viewBox="0 0 360 220" aria-hidden="true">${defs}
+      <polygon class="ov-beam" points="66,0 116,0 150,150 32,150" fill="url(#ovBeam)"/>
+      <ellipse class="ov-aura" cx="92" cy="150" rx="86" ry="40" fill="url(#ovAura)"/>
+      ${steps.map(([x, y, o], i) => `<g transform="translate(${x} ${y})"><g class="ov-step" style="--i:${i};--o:${o}"><path class="ov-riser" d="M0 8V${196 - y}M90 8V${196 - y}"/><rect class="ov-tread" x="0" y="0" width="90" height="16" rx="6"/><rect class="ov-tread-edge" x="0" y="0" width="90" height="4" rx="2"/></g></g>`).join('')}
+      <g class="ov-marker" transform="translate(91 150)"><circle class="ov-land-ring" r="14"/><circle class="ov-land-ring" style="--i:1" r="14"/><g class="ov-marker-drop"><circle class="ov-marker-glow" r="12" filter="url(#ovBlur)"/><circle class="ov-dot" r="7"/></g></g>
+      <path class="ov-chevrons" d="M176 98l6 6-6 6M266 66l6 6-6 6"/>
+      ${label(91, 186, 'STEP ONE')}
+    </svg>`;
+  }
+
   function insightVisual(kind) {
     if (kind === 'brain') return lottieVisual('meditating-brain', 'Meditating brain animation');
     if (kind === 'threshold') return lottieVisual('circle-morph', 'Arousal threshold animation');
     if (kind === 'plant') return lottieVisual('animated-plant', 'Growing plant animation', false);
     if (kind === 'trophy') return lottieVisual('victory-player', 'Victory animation');
     if (kind === 'blocker') return blockedSitesVisual();
+    if (['system', 'path', 'catch', 'first-step'].includes(kind)) return obstacleVisual(kind);
     const icons = { map: '⌖', retry: '↻', start: '↑', shield: '◆', people: '●●', unlock: '◇' };
     return `<div class="generic-insight-visual" aria-hidden="true">${icons[kind] || '◆'}</div>`;
   }
@@ -277,10 +354,10 @@
 
   function obstacleInsight() {
     const content = {
-      "I don't know where to start": { visual: 'map', title: "You don't have to figure it out alone.", message: "That's exactly why you're here. You don't need to know where to start, because we already do. Just follow the plan, one step at a time." },
-      "I've tried and failed before": { visual: 'retry', title: "You didn't fail. Willpower did.", message: "Willpower alone was never going to be enough, for anyone. This time you get structure built for the moments that broke you before." },
-      "Honestly, I haven't tried": { visual: 'start', title: "Then let's start now.", message: 'You already know what you want. This is where that actually starts.' },
-    }[state.obstacle] || { visual: 'shield', title: 'This was never really about willpower.', message: "Willpower runs out. That's not a flaw in you, that's how it works for everyone. What works is a system that prevents the urge before it hits." };
+      "I don't know where to start": { visual: 'path', title: "You don't have to figure it out alone.", message: "That's exactly why you're here. You don't need to know where to start, because we already do. Just follow the plan, one step at a time." },
+      "I've tried and failed before": { visual: 'catch', title: "You didn't fail. Willpower did.", message: "Willpower alone was never going to be enough, for anyone. This time you get structure built for the moments that broke you before." },
+      "Honestly, I haven't tried": { visual: 'first-step', title: "Then let's start now.", message: 'You already know what you want. This is where that actually starts.' },
+    }[state.obstacle] || { visual: 'system', title: 'This was never really about willpower.', message: "Willpower runs out. That's not a flaw in you, that's how it works for everyone. What works is a system that prevents the urge before it hits." };
     showInsight({ eyebrow: 'A DIFFERENT WAY FORWARD', ...content, accent: 'violet', buttonTitle: 'Build my system' }, () => go('obstacleBridge'));
   }
 

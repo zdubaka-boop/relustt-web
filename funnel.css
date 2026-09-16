@@ -901,3 +901,66 @@ body::before { opacity: 0.2; }
   .bridge-word { animation: none; }
   .bridge-line { transition: none; }
 }
+
+/* Obstacle insight scenes ------------------------------------------------ */
+.obstacle-visual { display: block; width: min(100%, 380px); height: auto; overflow: visible; filter: drop-shadow(rgba(0, 0, 0, 0.3) 0px 18px 35px); }
+.ov-label { fill: var(--quiet); font-size: 9px; font-weight: 700; letter-spacing: 0.16em; opacity: 0; animation: ov-fade 0.8s ease 1.4s forwards; }
+.ov-aura { opacity: 0; animation: ov-fade 1.6s ease 0.2s forwards; }
+.ov-dot { fill: #fff; }
+.ov-ring { fill: none; stroke: #c9a6ff; stroke-width: 1.5; opacity: 0; transform-box: fill-box; transform-origin: center; animation: ov-ring 2.4s ease-out 1.2s infinite; }
+@keyframes ov-fade { to { opacity: 1; } }
+@keyframes ov-draw { to { stroke-dashoffset: 0; } }
+@keyframes ov-pop { 0% { opacity: 0; transform: scale(0.3); } 70% { opacity: 1; transform: scale(1.15); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes ov-ring { 0% { opacity: 0.8; transform: scale(0.5); } 100% { opacity: 0; transform: scale(2.4); } }
+@keyframes ov-breathe { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+/* willpower vs system */
+.ov-gauge-shell { fill: rgba(255, 255, 255, 0.04); stroke: rgba(255, 255, 255, 0.18); stroke-width: 1.5; }
+.ov-gauge-cap { fill: rgba(255, 255, 255, 0.22); }
+.ov-gauge-fill { fill: url(#ovFill); transform-box: fill-box; transform-origin: bottom; animation: ov-drain 5.2s cubic-bezier(0.5, 0, 0.6, 1) 0.6s infinite; }
+.ov-gauge-sheen { fill: rgba(255, 255, 255, 0.28); transform-box: fill-box; transform-origin: bottom; animation: ov-drain 5.2s cubic-bezier(0.5, 0, 0.6, 1) 0.6s infinite; }
+@keyframes ov-drain { 0% { transform: scaleY(1); opacity: 1; } 62% { transform: scaleY(0.08); opacity: 1; } 68% { opacity: 0.25; } 72% { opacity: 0.9; } 76% { opacity: 0.2; } 84% { transform: scaleY(0.08); opacity: 0.2; } 100% { transform: scaleY(1); opacity: 1; } }
+.ov-hex { fill: none; stroke: url(#ovStroke); stroke-width: 2.5; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: ov-draw 1.6s cubic-bezier(0.4, 0, 0.2, 1) 0.4s forwards; }
+.ov-hex-glow { stroke-width: 8; opacity: 0.5; }
+.ov-spoke { stroke: rgba(201, 166, 255, 0.55); stroke-width: 1.5; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: ov-draw 0.7s ease-out calc(1.4s + var(--i) * 0.12s) forwards; }
+.ov-node { fill: #e6d6ff; opacity: 0; transform-box: fill-box; transform-origin: center; animation: ov-pop 0.5s ease-out calc(1.9s + var(--i) * 0.12s) forwards; }
+.ov-core { fill: #fff; opacity: 0; animation: ov-fade 0.6s ease 2.4s forwards; }
+.ov-core-ring { fill: none; stroke: #c9a6ff; stroke-width: 1.5; opacity: 0; animation: ov-fade 0.6s ease 2.5s forwards, ov-breathe 3s ease-in-out 3s infinite; }
+.ov-core-halo { fill: #a16eff; opacity: 0; animation: ov-fade 0.8s ease 2.4s forwards, ov-breathe 3s ease-in-out 3s infinite; }
+/* the route */
+.ov-grid path { stroke: rgba(255, 255, 255, 0.05); stroke-width: 1; }
+.ov-route-ghost { fill: none; stroke: rgba(255, 255, 255, 0.14); stroke-width: 1.5; stroke-dasharray: 3 7; stroke-linecap: round; }
+.ov-route { fill: none; stroke: url(#ovStroke); stroke-width: 4; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: ov-draw 3.2s cubic-bezier(0.4, 0, 0.2, 1) 0.3s forwards; }
+.ov-route-glow { fill: none; stroke: #a16eff; stroke-width: 12; stroke-linecap: round; opacity: 0.45; stroke-dasharray: 1; stroke-dashoffset: 1; animation: ov-draw 3.2s cubic-bezier(0.4, 0, 0.2, 1) 0.3s forwards; }
+.ov-start .ov-ring { animation-delay: 0.2s; }
+.ov-stop { opacity: 0; transform-box: fill-box; transform-origin: center; animation: ov-pop 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.3) calc(1.3s + var(--i) * 1s) forwards; }
+.ov-stop-disc { fill: #17102a; stroke: url(#ovStroke); stroke-width: 2; }
+.ov-stop-halo { fill: #a16eff; opacity: 0.6; }
+.ov-stop-number { fill: #fff; font-size: 11px; font-weight: 800; }
+.ov-traveller-dot { fill: #fff; }
+.ov-traveller-glow { fill: #8cebcf; opacity: 0.8; }
+.ov-path .ov-label:last-of-type { animation-delay: 3.4s; }
+/* the climb */
+.ov-floor { stroke: rgba(255, 255, 255, 0.08); stroke-width: 1; }
+.ov-ghost { fill: none; stroke: rgba(255, 106, 126, 0.55); stroke-width: 2; stroke-dasharray: 3 5; stroke-linecap: round; opacity: 0; animation: ov-fade 0.6s ease calc(0.9s + var(--i, 0) * 1.1s) forwards; }
+.ov-rail { opacity: 0; animation: ov-pop 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.3) calc(1.2s + var(--i) * 1.15s) forwards; transform-box: fill-box; transform-origin: center; }
+.ov-rail-bar { fill: #8cebcf; }
+.ov-rail-glow { fill: #4de6ad; opacity: 0.7; }
+.ov-climb { fill: none; stroke: url(#ovStroke); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: ov-draw 3.4s cubic-bezier(0.5, 0, 0.3, 1) 0.4s forwards; }
+.ov-climb-glow { fill: none; stroke: #a16eff; stroke-width: 12; stroke-linecap: round; stroke-linejoin: round; opacity: 0.45; stroke-dasharray: 1; stroke-dashoffset: 1; animation: ov-draw 3.4s cubic-bezier(0.5, 0, 0.3, 1) 0.4s forwards; }
+.ov-summit { opacity: 0; animation: ov-fade 0.4s ease 3.6s forwards; }
+.ov-summit .ov-ring { animation-delay: 3.7s; }
+.ov-catch .ov-label:last-of-type { animation-delay: 3.8s; }
+/* the first step */
+.ov-beam { opacity: 0; animation: ov-fade 1.4s ease 1.2s forwards; }
+.ov-step { opacity: 0; animation: ov-rise 0.8s cubic-bezier(0.2, 0.8, 0.3, 1) calc(0.2s + var(--i) * 0.25s) forwards; }
+@keyframes ov-rise { 0% { opacity: 0; transform: translateY(14px); } 100% { opacity: var(--o); transform: translateY(0); } }
+.ov-tread { fill: rgba(255, 255, 255, 0.07); stroke: rgba(201, 166, 255, 0.35); stroke-width: 1; }
+.ov-tread-edge { fill: url(#ovStroke); opacity: 0.85; }
+.ov-riser { stroke: rgba(255, 255, 255, 0.07); stroke-width: 1; }
+.ov-marker-drop { animation: ov-land 1.1s cubic-bezier(0.3, 0, 0.2, 1) 1.1s both; }
+@keyframes ov-land { 0% { transform: translateY(-120px); opacity: 0; } 15% { opacity: 1; } 80% { transform: translateY(2px); } 100% { transform: translateY(-6px); } }
+.ov-marker-glow { fill: #a16eff; opacity: 0.9; }
+.ov-land-ring { fill: none; stroke: #c9a6ff; stroke-width: 1.5; opacity: 0; transform-box: fill-box; transform-origin: center; animation: ov-ring 2.4s ease-out calc(2.1s + var(--i, 0) * 1.2s) infinite; }
+.ov-chevrons { fill: none; stroke: rgba(201, 166, 255, 0.5); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; opacity: 0; animation: ov-fade 0.8s ease 2.6s forwards, ov-breathe 2.4s ease-in-out 3.4s infinite; }
+.ov-first-step .ov-label { animation-delay: 2.4s; }
+@media (max-width: 767px) { .obstacle-visual { width: min(100%, 320px); margin: 4px 0; } }
