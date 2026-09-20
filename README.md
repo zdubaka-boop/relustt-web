@@ -11,6 +11,33 @@ Vercel project: `rostweb`
 
 Supabase project: `bnycfsujwbusxyeqnrhf`
 
+## Continue on another computer
+
+The current website work is on **`funnel-question-rebuild`**, not `main`:
+
+```sh
+git clone --branch funnel-question-rebuild https://github.com/zdubaka-boop/relustt-web.git
+cd relustt-web
+node --test tests/*.test.cjs
+```
+
+The matching iOS changes are on `main` in
+https://github.com/zdubaka-boop/unbound-price-blocking-backup.
+Environment secrets, CLI login sessions, `.vercel/`, and Supabase's local link
+are intentionally not committed. Authenticate on the new computer, relink the
+existing Vercel project `rostweb` (project `prj_fUWXKVNpCmRl0QTqGoViEZq4Mv5X`,
+team `team_qSVu5nbstIbzSpMbKDGquEnQ`), and link Supabase with
+`supabase link --project-ref bnycfsujwbusxyeqnrhf`. Do not create replacement
+projects or reset the remote database. Recreate secrets through secure
+environment configuration; do not copy credentials from chat into source.
+
+Handoff status, 2026-09-20: 23 local Node checks passed, database ownership/RLS
+checks passed with fixture writes rolled back, and the iOS simulator build
+passed. Code changes are not yet deployed or distributed. Apple/Google OAuth,
+Vercel production environment configuration, the Stripe webhook, a rotated
+Stripe API key, full payment-to-app verification, and iOS distribution remain.
+Only CLI/API work is authorized; do not request computer-control access.
+
 ## Stack
 
 Plain HTML/CSS/JS plus Vercel Node functions. There is no build step or npm
@@ -75,9 +102,11 @@ The Stripe webhook endpoint is:
 https://relustt.site/api/stripe-webhook
 ```
 
-Subscribe it to `checkout.session.completed`,
+Subscribe it to `checkout.session.completed`, `checkout.session.async_payment_succeeded`,
 `customer.subscription.created`, `customer.subscription.updated`, and
-`customer.subscription.deleted`.
+`customer.subscription.deleted`, plus `invoice.paid`, `invoice.payment_failed`,
+and `invoice.payment_action_required`. Use the endpoint's signing secret, not
+the Stripe API key, for `STRIPE_WEBHOOK_SECRET`.
 
 In Supabase Authentication → URL Configuration, add:
 
@@ -115,6 +144,51 @@ Never expose `SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_SECRET_KEY`, or
 - Supabase RLS only lets a signed-in user read their own subscription rows.
 - The iOS app unlocks for `active` or `trialing` web plans that have not expired.
 - Existing App Store customers remain authorized by RevenueCat.
+- Purchase ownership and billing changes share a service-role-only database
+  transaction. A second account cannot take a claimed purchase, and webhooks
+  cannot erase ownership. Webhooks retrieve Stripe's current state and older
+  in-flight snapshots cannot replace newer ones.
+- OAuth codes are explicitly exchanged before attaching a new purchase. Reloads
+  can recover an already-connected purchase; a leftover login in a shared
+  browser cannot silently receive a new purchase. Failed claims can be retried.
+- The iOS app checks web access at launch, foregrounding, and every minute while
+  active. Its identity-bound, in-memory access lease lasts at most five minutes
+  (never past the billing expiry). No device-wide stored boolean grants access.
+- First-time app users see the access screen after the splash, then can choose
+  “I'm new — build my plan” to take native onboarding. The native funnel ends
+  at the real RevenueCat offering, not its previous preview-only price choices.
+  StoreKit/RevenueCat supplies the actual localized price and purchase terms.
+
+### Verification and setup status (2026-09-19)
+
+The correct Supabase project is linked. Both web subscription migrations were
+applied without changing the existing community schema. The two earlier
+community migrations in this repo were fetched from that project's history.
+
+Run local API checks with `node --test tests/*.test.cjs`. Run transactional
+database isolation checks with
+`supabase db query --linked --file tests/subscription-access.sql`; its fixture
+writes are rolled back and it never creates or modifies auth accounts.
+
+Apple and Google providers were verified disabled and still require provider
+configuration. The live `relustt` Stripe account now has product
+`relustt_web_membership_v1` and monthly Price `price_1UHLIHE0Q5KzSNmvTXXSdrTF`.
+Set that Price as `STRIPE_PRICE_FUNNEL_MONTHLY` in **Production only**. Test and
+preview environments need their own test-mode key, Price, and webhook secret.
+No customer, subscription, payment, or webhook endpoint was created during
+product setup. `scripts/setup-stripe-funnel.cjs` checks for the existing Price
+before creating anything, accepts a key through hidden input, and never saves it.
+
+The later `--readiness` check confirmed live charges and payouts are enabled,
+card payments are active, and Stripe reports no currently due, past-due, or
+pending-verification requirements. No `relustt.site` webhook was configured.
+Live Checkout amount checks were planned but not run before this handoff;
+the passing checkout tests are isolated tests, not completed payments.
+
+Vercel production configuration and complete OAuth/payment
+round-trip testing remain pending. Do not treat mocked checkout tests as a
+successful real purchase. Rotate any live secret pasted into a conversation,
+then add it directly to the secure environment; never commit it.
 
 ### Funnel billing: paid introductory week
 
@@ -223,9 +297,11 @@ gitignored—run `vercel link` after cloning to reconnect.
 - Contact address on About / Privacy / Terms is a personal Gmail. Swap to a `@relustt.site` alias once mail forwarding is set up at GoDaddy.
 - Privacy Policy describes the AI coach sending messages off-device and lists analytics/crash reporting. **Confirm this matches what the app actually does** before relying on it.
 - Footer TikTok / Instagram / X icons are `href="#"` placeholders — handles not yet decided.
-- Funnel checkout cannot run until `STRIPE_PRICE_FUNNEL_MONTHLY` is configured with the verified $29.50 monthly Price.
+- The live $29.50 monthly Price is created; checkout still needs its Vercel
+  environment variables and webhook endpoint configured.
 - Apple/Google login cannot run until both providers and redirect URLs are enabled in Supabase.
-- The migration must be pushed to the linked Supabase project.
+- Database migrations are applied to `bnycfsujwbusxyeqnrhf`; deployment and
+  provider configuration still need to be completed before launching purchases.
 
 ## SEO
 

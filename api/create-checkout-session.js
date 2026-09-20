@@ -62,7 +62,7 @@ module.exports = async function handler(request, response) {
         error: 'Secure checkout is being connected. Please try again shortly.',
       });
     }
-    console.error('create-checkout-session failed', error?.message || error);
+    console.error('create-checkout-session failed');
     return sendJson(response, 500, { error: 'Checkout could not be started.' });
   }
 };

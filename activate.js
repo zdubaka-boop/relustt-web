@@ -4,6 +4,7 @@ const message = document.getElementById('activationMessage');
 const form = document.getElementById('activationForm');
 const success = document.getElementById('activationSuccess');
 const providerButtons = [...document.querySelectorAll('[data-provider]')];
+const retryButton = document.getElementById('activationRetry');
 const params = new URLSearchParams(window.location.search);
 const checkoutSessionId = params.get('session_id');
 const isOAuthCallback = params.has('code');
@@ -16,6 +17,7 @@ function showMessage(text, isSuccess = false) {
 
 function setBusy(isBusy) {
   providerButtons.forEach((button) => { button.disabled = isBusy; });
+  retryButton.disabled = isBusy;
 }
 
 async function activate() {
@@ -31,12 +33,13 @@ async function activate() {
   const supabase = createClient(config.supabaseUrl, config.supabasePublishableKey, {
     auth: {
       flowType: 'pkce',
-      detectSessionInUrl: true,
+      detectSessionInUrl: false,
       persistSession: true,
     },
   });
 
-  async function claimPurchase(session) {
+  let verifiedSession;
+  async function claimPurchase(session, checkOnly = false) {
     setBusy(true);
     showMessage('Connecting your purchase…', true);
     const response = await fetch('/api/claim-subscription', {
@@ -45,30 +48,40 @@ async function activate() {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${session.access_token}`,
       },
-      body: JSON.stringify({ sessionId: checkoutSessionId }),
+      body: JSON.stringify({ sessionId: checkoutSessionId, checkOnly }),
     });
     const payload = await response.json();
+    if (checkOnly && response.status === 404) { showMessage(''); setBusy(false); return; }
     if (!response.ok) throw new Error(payload.error || 'Access could not be connected.');
     if (!payload.active) throw new Error('The subscription is not active yet. Please retry in a moment.');
 
     form.classList.add('is-hidden');
     success.classList.add('is-visible');
+    retryButton.hidden = true;
     showMessage('Your active subscription is now linked to this login.', true);
     const cleanUrl = new URL(window.location.href);
     cleanUrl.searchParams.delete('code');
     window.history.replaceState({}, '', cleanUrl);
   }
 
+  retryButton.addEventListener('click', async () => {
+    if (!verifiedSession) return;
+    try { await claimPurchase(verifiedSession); }
+    catch (error) { setBusy(false); showMessage(error.message); }
+  });
+
   providerButtons.forEach((button) => {
     button.addEventListener('click', async () => {
       setBusy(true);
       showMessage('');
       const redirectTo = `${window.location.origin}/activate?session_id=${encodeURIComponent(checkoutSessionId)}`;
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: button.dataset.provider,
-        options: { redirectTo },
-      });
-      if (error) {
+      try {
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: button.dataset.provider,
+          options: { redirectTo },
+        });
+        if (error) throw error;
+      } catch (error) {
         setBusy(false);
         showMessage(error.message);
       }
@@ -79,10 +92,20 @@ async function activate() {
   // An unrelated session left in a shared browser must never silently receive
   // the new subscription on the first visit to this page.
   if (isOAuthCallback) {
-    const { data, error } = await supabase.auth.getSession();
+    const { data, error } = await supabase.auth.exchangeCodeForSession(params.get('code'));
     if (error) throw error;
     if (!data.session) throw new Error('Login did not finish. Please choose Apple or Google again.');
+    verifiedSession = data.session;
+    retryButton.hidden = false;
+    const cleanUrl = new URL(window.location.href);
+    cleanUrl.searchParams.delete('code');
+    window.history.replaceState({}, '', cleanUrl);
     await claimPurchase(data.session);
+  } else if (params.has('error')) {
+    showMessage('Sign-in was not completed. Please choose Apple or Google again.');
+  } else {
+    const { data } = await supabase.auth.getSession();
+    if (data.session) await claimPurchase(data.session, true);
   }
 }
 

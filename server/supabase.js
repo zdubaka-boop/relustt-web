@@ -61,6 +61,31 @@ async function getClaimBySubscription(subscriptionId) {
   return rows?.[0] || null;
 }
 
+async function getClaimByCheckoutSession(sessionId) {
+  const rows = await supabaseAdmin(
+    `/rest/v1/purchase_claims?stripe_checkout_session_id=eq.${encodeFilter(sessionId)}&select=*&limit=1`
+  );
+  return rows?.[0] || null;
+}
+
+async function syncStripeSubscription(subscription, observedAt, claim = {}) {
+  const payload = await supabaseAdmin('/rest/v1/rpc/sync_stripe_subscription', {
+    method: 'POST',
+    body: JSON.stringify({
+      p_subscription: subscription,
+      p_observed_at: observedAt,
+      p_claim_id: claim.id || null,
+      p_user_id: claim.userId || null,
+      p_claim_secret_hash: claim.secretHash || null,
+      p_checkout_session_id: claim.sessionId || null,
+    }),
+  });
+  // PostgREST may serialize a composite return type as a one-row array.
+  const row = Array.isArray(payload) ? payload[0] : payload;
+  if (!row?.provider_subscription_id || !row?.status) throw new Error('Missing synchronized subscription.');
+  return row;
+}
+
 async function getBillingSubscription(subscriptionId) {
   const rows = await supabaseAdmin(
     `/rest/v1/billing_subscriptions?provider_subscription_id=eq.${encodeFilter(subscriptionId)}&select=*&limit=1`
@@ -89,18 +114,6 @@ async function updateClaim(claimId, changes) {
   return rows?.[0] || null;
 }
 
-async function upsertBillingSubscription(subscription) {
-  const rows = await supabaseAdmin(
-    '/rest/v1/billing_subscriptions?on_conflict=provider_subscription_id',
-    {
-      method: 'POST',
-      headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
-      body: JSON.stringify(subscription),
-    }
-  );
-  return rows?.[0] || null;
-}
-
 async function getWebhookEvent(eventId) {
   const rows = await supabaseAdmin(
     `/rest/v1/billing_webhook_events?stripe_event_id=eq.${encodeFilter(eventId)}&select=*&limit=1`
@@ -111,7 +124,7 @@ async function getWebhookEvent(eventId) {
 async function insertWebhookEvent(eventId, eventType) {
   return supabaseAdmin('/rest/v1/billing_webhook_events', {
     method: 'POST',
-    headers: { Prefer: 'return=minimal' },
+    headers: { Prefer: 'resolution=ignore-duplicates,return=minimal' },
     body: JSON.stringify({ stripe_event_id: eventId, event_type: eventType }),
   });
 }
@@ -132,11 +145,12 @@ module.exports = {
   getBillingSubscription,
   getClaim,
   getClaimBySubscription,
+  getClaimByCheckoutSession,
   getWebhookEvent,
   insertClaim,
   insertWebhookEvent,
   supabaseAdmin,
+  syncStripeSubscription,
   updateClaim,
   updateWebhookEvent,
-  upsertBillingSubscription,
 };

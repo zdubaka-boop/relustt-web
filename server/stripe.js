@@ -116,7 +116,7 @@ function subscriptionId(value) {
 
 function normalizeSubscription(subscription, userId = null) {
   const item = subscription.items?.data?.[0] || null;
-  const periodEnd = subscription.current_period_end || item?.current_period_end || null;
+  const periodEnd = subscription.current_period_end || item?.current_period_end || subscription.trial_end || null;
   return {
     user_id: userId,
     provider: 'stripe',
@@ -133,9 +133,16 @@ function normalizeSubscription(subscription, userId = null) {
   };
 }
 
+function hasActiveSubscription(subscription, now = Date.now()) {
+  return ['active', 'trialing'].includes(subscription?.status)
+    && Number.isFinite(Date.parse(subscription.current_period_end))
+    && Date.parse(subscription.current_period_end) > now;
+}
+
 module.exports = {
   createCheckoutSession,
   normalizeSubscription,
+  hasActiveSubscription,
   retrieveCheckoutSession,
   retrieveSubscription,
   subscriptionId,
