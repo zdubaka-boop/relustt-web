@@ -1,5 +1,5 @@
 /* Planning profiles, not diagnostic categories. Recomputed from current answers. */
-window.RelusttArchetypes = (() => {
+const RelusttArchetypes = (() => {
   const profiles = {
     reconnect: {
       name: 'The Reconnector', motif: 'bridge',
@@ -132,49 +132,53 @@ window.RelusttArchetypes = (() => {
 
   // Shared answers drive new results on either path. Branch-specific goals remain
   // useful context, but no longer count the same confidence concern repeatedly.
+  // The stated priority anchors the result. Everything else is a distinctive
+  // signal, not a generic "has the habit" tick, so no single profile hoovers up points.
+  const PRIORITY = 6;
   const sharedEvidence = {
     motivation: {
       'Sexual pleasure': [],
-      'Relieving stress': [['cycle', 1, 'Turning to porn for stress relief']],
-      'Escaping difficult feelings': [['quiet', 1, 'Looking for relief from difficult feelings']],
-      'Filling time when bored': [['cycle', 1, 'Watching when bored']],
+      'Relieving stress': [['quiet', 1, 'Turning to porn for stress relief']],
+      'Escaping difficult feelings': [['quiet', 2, 'Looking for relief from difficult feelings']],
+      'Filling time when bored': [['focus', 1, 'Watching to fill time']],
       'It feels automatic': [['cycle', 2, 'An automatic habit']],
       'Something else or not sure': [],
     },
     urgeContext: {
-      'Alone at night': [['cycle', 1, 'Nighttime urges']],
+      'Alone at night': [],
       'While scrolling on my phone': [['cycle', 1, 'Phone scrolling as a trigger']],
       'When putting off a task': [['focus', 2, 'Watching when putting tasks off']],
-      'After a difficult day': [['cycle', 1, 'Urges after a difficult day']],
+      'After a difficult day': [['quiet', 1, 'Urges after a difficult day']],
       'It varies': [], 'Not sure': [],
     },
     watchControl: {
-      'Never': [], 'Rarely': [],
-      'Sometimes': [['cycle', 1, 'Sometimes watching longer than intended']],
-      'Often': [['cycle', 3, 'Often watching longer than intended']],
-      'Very often': [['cycle', 4, 'Regularly watching longer than intended']],
+      'Never': [], 'Rarely': [], 'Sometimes': [],
+      'Often': [['cycle', 2, 'Often watching longer than intended']],
+      'Very often': [['cycle', 3, 'Regularly watching longer than intended']],
       "I haven't watched in the past month": [],
     },
     changePriority: {
-      'Control over the habit': [['cycle', 2, 'More control over the habit']],
-      'More time and focus': [['focus', 4, 'More time and focus']],
-      'Feeling better about myself': [['confidence', 4, 'Feeling better about yourself']],
-      'Closer relationships': [['reconnect', 4, 'Closer relationships']],
-      'Confidence in intimacy': [['confidence', 4, 'Confidence in intimacy']],
+      'Control over the habit': [['cycle', PRIORITY, 'More control over the habit']],
+      'More time and focus': [['focus', PRIORITY, 'More time and focus']],
+      'Feeling better about myself': [['confidence', PRIORITY, 'Feeling better about yourself']],
+      'Closer relationships': [['reconnect', PRIORITY, 'Closer relationships']],
+      'Confidence in intimacy': [['confidence', PRIORITY, 'Confidence in intimacy']],
     },
     setbackTrigger: {
       'Stress or difficult feelings': [['quiet', 2, 'Difficult feelings behind setbacks']],
       'Easy access in the moment': [['cycle', 2, 'Easy access behind setbacks']],
       'Not knowing what to do instead': [['starter', 3, 'Needing a clear alternative']],
+      "I haven't returned to it": [['confidence', 1, 'Staying away after a setback']],
+      // Earlier options, kept so sessions saved before 2026-09-17 still score.
       'One setback makes me give up': [['confidence', 2, 'Rebuilding after a setback']],
-      "I haven't returned to it": [], 'Something else or not sure': [],
+      'Something else or not sure': [],
     },
     supportPreference: {
       'Seeing my progress in real time': [['confidence', 2, 'Wanting to see progress add up']],
       'Talking to people who get it': [['reconnect', 2, 'Wanting people who understand']],
       'Support 24/7, whenever an urge hits': [['quiet', 3, 'A preference for private, on-demand support']],
       'Understanding why this happens': [['starter', 2, 'Wanting to understand the pattern']],
-      'Blocking adult sites automatically': [['cycle', 2, 'Wanting friction against easy access']],
+      'Blocking adult sites automatically': [['cycle', 1, 'Wanting friction against easy access']],
       // Earlier wording, kept so sessions saved before 2026-09-17 still score.
       'Private guidance on my own': [['quiet', 2, 'A preference for private guidance']],
       'An anonymous community': [['quiet', 4, 'A preference for anonymous support']],
@@ -190,15 +194,19 @@ window.RelusttArchetypes = (() => {
     const reasons = Object.fromEntries(Object.keys(profiles).map(key => [key, []]));
     const add = (key, weight, text) => { scores[key] += weight; reasons[key].push({ weight, text }); };
     for (const [field, choices] of shared) for (const entry of choices[answers[field]]) add(...entry);
-    // Frequency is context, not a proxy for loss of control.
-    if (answers.frequency === 'Daily') add('cycle', 1, 'A daily habit');
     if (answers.triedQuit === 'No') add('starter', 3, 'Your first attempt');
     if (answers.triedQuit === 'Yes') {
-      add('cycle', 1, 'You have tried before');
       if (answers.quitProgress === 'Not great, I keep relapsing') add('cycle', 2, 'Repeated setbacks');
       if (answers.quitProgress === 'On and off') add('cycle', 1, 'On-and-off progress');
+      if (answers.quitProgress === "Good, I've made real progress") add('confidence', 1, 'Progress to build on');
     }
-    const priority = sharedEvidence.changePriority[answers.changePriority]?.[0]?.[0];
+    let priority = sharedEvidence.changePriority[answers.changePriority]?.[0]?.[0];
+    // Wanting control on a first attempt is a starting point, not a broken pattern.
+    if (priority === 'cycle' && answers.triedQuit === 'No') {
+      scores.cycle -= PRIORITY; scores.starter += PRIORITY; priority = 'starter';
+      reasons.cycle = reasons.cycle.filter(r => r.text !== 'More control over the habit');
+      reasons.starter.push({ weight: PRIORITY, text: 'A clear starting point' });
+    }
     const ranked = Object.keys(profiles).sort((a, b) => scores[b] - scores[a]
       || Number(b === priority) - Number(a === priority)
       || Math.max(0, ...reasons[b].map(r => r.weight)) - Math.max(0, ...reasons[a].map(r => r.weight)));
@@ -225,3 +233,5 @@ window.RelusttArchetypes = (() => {
   }
   return Object.freeze({ resolve, emblem });
 })();
+if (typeof window !== 'undefined') window.RelusttArchetypes = RelusttArchetypes;
+if (typeof module !== 'undefined' && module.exports) module.exports = RelusttArchetypes;

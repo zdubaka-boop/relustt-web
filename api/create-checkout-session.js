@@ -7,6 +7,7 @@ const { ConfigurationError, required, siteUrl } = require('../server/env');
 const { methodNotAllowed, parseJsonBody, sendJson } = require('../server/http');
 const { insertClaim, updateClaim } = require('../server/supabase');
 const { createCheckoutSession } = require('../server/stripe');
+const { ingest, TrackingError } = require('../server/funnel-tracking');
 
 const PRICE_ENV_BY_PLAN = Object.freeze({
   monthly: 'STRIPE_PRICE_MONTHLY',
@@ -24,7 +25,7 @@ module.exports = async function handler(request, response) {
   if (request.method !== 'POST') return methodNotAllowed(response, ['POST']);
 
   try {
-    const { plan, pathway } = parseJsonBody(request);
+    const { plan, pathway, funnel } = parseJsonBody(request);
     const isIntroductoryPlan = typeof plan === 'string' && Object.hasOwn(INTRO_AMOUNT_BY_PLAN, plan);
     const isLegacyPlan = typeof plan === 'string' && Object.hasOwn(PRICE_ENV_BY_PLAN, plan);
     if (!isIntroductoryPlan && !isLegacyPlan) {
@@ -34,9 +35,18 @@ module.exports = async function handler(request, response) {
     const priceId = required(isIntroductoryPlan ? 'STRIPE_PRICE_FUNNEL_MONTHLY' : PRICE_ENV_BY_PLAN[plan]);
     const returnPathway = pathway === 'performance' ? '&path=performance' : '';
     const claim = newClaimCredentials();
+    let quiz = {};
+    if (funnel && isIntroductoryPlan) {
+      if (Buffer.byteLength(JSON.stringify(funnel)) > 32768) return sendJson(response, 413, { error: 'Quiz snapshot is too large.' });
+      const { batch } = await ingest(funnel, request);
+      quiz = { funnel_session_id: batch.id, funnel_snapshot: {
+        version: funnel.version, answers: { ...batch.answers, selectedPrice: String(INTRO_AMOUNT_BY_PLAN[plan] / 100) }, result: batch.result,
+      } };
+    }
     await insertClaim({
       id: claim.id,
       secret_hash: hashClaimSecret(claim.secret),
+      ...quiz,
     });
 
     const origin = siteUrl();
@@ -57,6 +67,7 @@ module.exports = async function handler(request, response) {
     response.setHeader('Set-Cookie', serializeClaimCookie(claim.id, claim.secret));
     return sendJson(response, 200, { url: checkoutSession.url });
   } catch (error) {
+    if (error instanceof TrackingError) return sendJson(response, error.status, { error: 'Your quiz could not be saved. Please reload and try again.' });
     if (error instanceof ConfigurationError) {
       return sendJson(response, 503, {
         error: 'Secure checkout is being connected. Please try again shortly.',

@@ -1,0 +1,12 @@
+.git/
+.vercel/
+.env*
+node_modules/
+%SystemDrive%/
+tests/
+scripts/
+supabase/
+*.md
+*.py
+obstacle-preview.html
+blog/src/

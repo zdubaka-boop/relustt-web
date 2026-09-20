@@ -30,6 +30,7 @@ async function processStripeEvent(event) {
     await updateClaim(claim.id, {
       stripe_checkout_session_id: object.id,
       purchaser_email: object.customer_details?.email || null,
+      ...(object.payment_status === 'paid' && !claim.paid_at ? { paid_at: new Date().toISOString() } : {}),
     });
     const id = subscriptionId(object.subscription);
     if (id) await syncSubscription(id);

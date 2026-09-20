@@ -87,7 +87,7 @@ test('legacy direct plans keep their existing billing without an introductory pe
   assert.equal([...requests[0].form.keys()].some(key => key.includes('trial') || key.startsWith('line_items[1]')), false);
 });
 
-function handlerHarness() {
+function handlerHarness(ingest = async () => { throw new Error('Unexpected quiz ingest'); }) {
   const checkoutCalls = [];
   const configReads = [];
   const claims = [];
@@ -117,11 +117,34 @@ function handlerHarness() {
         return { id: 'cs_test', url: 'https://checkout.stripe.com/test' };
       },
     },
+    '../server/funnel-tracking': { TrackingError: class extends Error {}, ingest },
   };
-  const sandbox = { module: { exports: {} }, require: name => dependencies[name], console };
+  const sandbox = { module: { exports: {} }, require: name => dependencies[name], console, Buffer };
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../api/create-checkout-session.js'), 'utf8'), sandbox);
   return { handler: sandbox.module.exports, checkoutCalls, configReads, claims };
 }
+
+test('checkout freezes the sanitized snapshot and server-selected price before creating payment', async () => {
+  const {handler,claims,checkoutCalls}=handlerHarness(async () => ({batch:{id:'journey_test',
+    answers:{frequency:'Daily',selectedPrice:'999'},result:{key:'confidence',hasEvidence:true}}}));
+  const response={setHeader(){}};
+  await handler({method:'POST',body:{plan:'tier_13',funnel:{version:'fixture',safeWord:'PRIVATE'}}},response);
+  assert.equal(response.status,200);
+  assert.equal(claims[0].funnel_session_id,'journey_test');
+  assert.equal(claims[0].funnel_snapshot.answers.selectedPrice,'13');
+  assert.equal(claims[0].funnel_snapshot.answers.frequency,'Daily');
+  assert.ok(!JSON.stringify(claims).includes('PRIVATE'));
+  assert.equal(checkoutCalls.length,1);
+});
+
+test('quiz saving failure prevents creating a claim or Stripe checkout', async () => {
+  const {handler,claims,checkoutCalls}=handlerHarness(async () => {throw new Error('Database unavailable');});
+  const response={setHeader(){}};
+  await handler({method:'POST',body:{plan:'tier_5',funnel:{version:'fixture'}}},response);
+  assert.equal(response.status,500);
+  assert.equal(claims.length,0);
+  assert.equal(checkoutCalls.length,0);
+});
 
 test('API maps each allowed funnel plan to a server-owned amount and the single monthly Price', async () => {
   for (const [plan, amount] of [['tier_5', 500], ['tier_9', 900], ['tier_13', 1300], ['tier_1767', 1767]]) {

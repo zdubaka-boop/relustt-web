@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Obstacle scene preview</title>
+</head>
+<body style="background:#06060e;color:#fff;font-family:sans-serif;padding:40px">
+  <p>Loading preview…</p>
+  <script>
+    // Local dev helper only — not part of the shipped funnel. Seeds sessionStorage
+    // with the obstacle answer that produces each animated scene, then jumps to
+    // the real screen. Excluded from deployment by .vercelignore.
+    const variants = {
+      system: { obstacle: "The habit's stronger than my willpower", triedQuit: 'Yes' },
+      path: { obstacle: "I don't know where to start", triedQuit: 'No' },
+      catch: { obstacle: "I've tried and failed before", triedQuit: 'Yes' },
+      'first-step': { obstacle: "Honestly, I haven't tried", triedQuit: 'No' },
+    };
+    const which = new URL(location.href).searchParams.get('which');
+    const state = variants[which] || variants.system;
+    sessionStorage.setItem('relustt_web_funnel_v1', JSON.stringify({ screen: 'obstacleInfo', ...state }));
+    location.replace('/funnel.html?step=build-your-system&preview=' + Date.now());
+  </script>
+</body>
+</html>

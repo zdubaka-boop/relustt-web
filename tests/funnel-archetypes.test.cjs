@@ -70,8 +70,13 @@ for (const pathway of ['identity', 'performance']) for (const [expected, overrid
   assert.ok(actual.hasEvidence);
   assert.equal(resolve({ ...answers, performanceGoal: 'Performing with confidence', anxietyTrigger: 'Stress or pressure in the moment', confidenceSpill: 'Yes, it bleeds into everything', identityGoal: 'More productive', support: "I'm hiding it" }).key, expected, 'Branch questions do not double count shared evidence');
 }
+// 2026-09-18: habit-adjacent answers (automatic motivation, watching often, relapsing)
+// used to outweigh the user's stated priority, so almost everyone landed on Pattern
+// Breaker regardless of what they said they wanted. The stated priority now anchors
+// the result; secondary signals no longer stack up enough to override it on their own.
 const patternAnswers = { ...sharedBase, motivation: 'It feels automatic', watchControl: 'Very often', quitProgress: 'Not great, I keep relapsing' };
-assert.equal(resolve({ ...patternAnswers, pathway: 'performance', changePriority: 'Confidence in intimacy', performanceGoal: 'Feeling normal again' }).key, 'cycle', 'Strong habit evidence can outweigh an intimacy goal');
+assert.equal(resolve({ ...patternAnswers, pathway: 'performance', changePriority: 'Confidence in intimacy', performanceGoal: 'Feeling normal again' }).key, 'confidence', 'The stated priority anchors the result over scattered habit signals');
+assert.equal(resolve({ ...sharedBase, changePriority: 'Control over the habit', motivation: 'It feels automatic', watchControl: 'Very often', quitProgress: 'Not great, I keep relapsing' }).key, 'cycle', 'Habit evidence still wins when the priority itself is control over the habit');
 assert.equal(resolve({ ...sharedBase, triedQuit: 'No', quitProgress: 'Not great, I keep relapsing', setbackTrigger: 'Easy access in the moment' }).key, 'starter', 'Stale setbacks ignored after changing quit history');
 assert.equal(resolve({ changePriority: 'More time and focus' }).hasEvidence, false, 'One new answer does not claim completed analysis');
 assert.equal(resolve({ motivation: 'Something else or not sure', urgeContext: 'Not sure', supportPreference: "I'm not sure yet", triedQuit: 'Yes' }).hasEvidence, false, 'Uncertain answers do not satisfy the evidence minimum');

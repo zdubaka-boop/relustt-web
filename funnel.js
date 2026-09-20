@@ -51,6 +51,8 @@
   let restored = {};
   const pageUrl = new URL(window.location.href);
   const startingOver = pageUrl.searchParams.get('start') === '1';
+  let tracker;
+  try { tracker = window.RelusttTracking?.create(startingOver); } catch {}
   if (startingOver) {
     try { sessionStorage.removeItem(STORAGE_KEY); } catch {}
   } else {
@@ -137,6 +139,7 @@
   }
 
   function go(destination) {
+    tracker?.advance(state, stepSlugs[state.screen], stepSlugs[destination]);
     state.history.push(state.screen);
     state.screen = destination;
     writeRoute('push', true);
@@ -153,6 +156,8 @@
   }
 
   function resetFunnel() {
+    tracker?.dispose();
+    try { tracker = window.RelusttTracking?.create(true); } catch { tracker = null; }
     try { sessionStorage.removeItem(STORAGE_KEY); } catch {}
     Object.assign(state, defaults, { history: [], safeWord: '' });
     writeRoute();
@@ -231,7 +236,7 @@
     mount(`<div class="welcome">
       <div class="marble-wordmark" aria-label="RELUSTT">${letters}</div>
       <div class="welcome-copy"><h1>Quit porn for good.<span>Take back control.</span></h1><p>Take the quiz. Build a system beyond willpower.</p><div class="rating" aria-label="Rated 4.8 out of 5">★★★★★ <strong>4.8</strong></div></div>
-      <div class="welcome-action"><button class="marble-button" id="beginFunnel" type="button" aria-label="Begin quiz">→</button><small>Tap to begin · About 2 minutes</small></div>
+      <div class="welcome-action"><button class="marble-button" id="beginFunnel" type="button" aria-label="Begin quiz">→</button><small>Tap to begin · About 2 minutes</small><small>Your answers are saved to build your plan and understand how the quiz is used. <a href="/privacy" target="_blank" rel="noopener">Privacy</a></small></div>
     </div>`, { top: false, className: 'welcome-screen' });
     document.getElementById('beginFunnel').addEventListener('click', () => go('frequency'));
   }
@@ -574,6 +579,7 @@
       range.setAttribute('aria-valuetext', `${state.commitment} out of 10. ${commitmentLabel()}`);
     };
     range.addEventListener('input', () => { state.commitment = Number(range.value); update(); persist(); });
+    range.addEventListener('change', () => tracker?.answer(state, stepSlugs[state.screen]));
     update();
     document.getElementById('continueButton').addEventListener('click', () => go('name'));
     const notYet = app.querySelector('.not-yet-button');
@@ -809,7 +815,7 @@
       <div class="price-support"><span id="priceSupport">Choosing a higher price helps us keep the $5 option affordable for people who need it.</span></div><div class="price-spacer"></div>
       ${primaryButton('Get My Plan', 'priceContinue', '')}</div>`, { back: false, className: 'price-page' });
     app.querySelectorAll('[data-price]').forEach((button) => button.addEventListener('click', () => {
-      state.selectedPrice = button.dataset.price; persist();
+      state.selectedPrice = button.dataset.price; persist(); tracker?.answer(state, 'choose-price');
       app.querySelectorAll('[data-price]').forEach((item) => {
         item.classList.toggle('is-selected', item === button);
         item.setAttribute('aria-pressed', String(item === button));
@@ -1001,12 +1007,15 @@
     button.disabled = true; button.querySelector('span').textContent = 'Opening secure checkout…'; error.textContent = '';
     try {
       const plan = `tier_${state.selectedPrice.replace('.', '')}`;
-      const response = await fetch('/api/create-checkout-session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ plan, pathway: state.pathway }) });
+      if (!tracker) throw new Error('Your quiz could not be saved. Please reload before continuing.');
+      const funnel = await tracker.checkout(state);
+      const response = await fetch('/api/create-checkout-session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ plan, pathway: state.pathway, funnel }) });
       const payload = await response.json().catch(() => ({}));
       if (!button.isConnected || state.screen !== 'paywall') return;
       if (!response.ok || !payload.url) throw new Error(payload.error || 'Checkout could not be started.');
       window.location.assign(payload.url);
     } catch (checkoutError) {
+      tracker?.checkoutError();
       if (!button.isConnected || state.screen !== 'paywall') return;
       error.textContent = checkoutError.message || 'Checkout could not be started.';
       button.disabled = false; button.querySelector('span').textContent = 'Reveal my 90-day plan';
@@ -1015,6 +1024,7 @@
 
 
   function render() {
+    tracker?.view(state, stepSlugs[state.screen]);
     switch (state.screen) {
       case 'welcome': return showWelcome();
       case 'frequency': return showQuestion({ title: 'How often do you currently watch porn?', options: ['Daily', 'A few times a week', 'A few times a month', 'Already trying to cut back'], selected: state.frequency }, (a) => { state.frequency = a; go('motivation'); });

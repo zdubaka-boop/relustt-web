@@ -1,6 +1,23 @@
 # RELUSTT web funnel — cloud handoff
 
-Prepared 2026-09-16. Start here before changing the project.
+Updated 2026-09-21. Start with the current status below; the dated September 16 record is historical.
+
+## Current continuation point — 2026-09-21
+
+- Website branch: `funnel-question-rebuild` in https://github.com/zdubaka-boop/relustt-web. Clone this branch and run `npm ci` then `npm test`; do not overlay an old ZIP onto current source.
+- iOS quiz-profile branch: `codex/web-quiz-profile-sync` in https://github.com/zdubaka-boop/unbound-price-blocking-backup, based on the newer native-onboarding work on `main`. Use that branch for the combined profile handoff. Build/sign on a Mac; source synchronization is not an app release.
+- Live site: https://relustt.site. Deployment `dpl_4HXwHD4D74JLDVoLdaiXfzm5KTP4` is READY. It includes the latest tracking APIs and the corrected homepage tracking script tags.
+- Supabase: `bnycfsujwbusxyeqnrhf`; tracking migrations already applied. Both providers enabled. Site URL is `https://relustt.site`; redirects are `https://relustt.site/activate*` and `relustt://auth/callback`. Do not reset/recreate the project.
+- Vercel `rostweb`: production Stripe key, funnel monthly Price and webhook secret configured securely. Webhook `we_1UHtNXE0Q5KzSNmvCTLgxa1D` enabled. Never add credentials to Git or Obsidian. Preview/test-mode billing still needs separate configuration; legacy direct monthly/yearly checkout prices are separate from funnel pricing.
+- Required flow: quiz → purchase → sign in on website to link the purchase → app download → same provider/account sign-in. Payment alone does not create the provider account. Same-browser purchase proof expires after 48 hours.
+- Evidence: 31 web tests and live rollback-only SQL checks passed. An unpaid $5 live Checkout was created and expired with no charge/customer/subscription. Browser telemetry saved successfully; smoke-test analytics use `utm_source=deployment_verification`. No real paid/provider/iPhone round trip has been completed.
+- Remaining: paid end-to-end testing, build/distribute matching iOS source, rotate the chat-supplied live key, replace placeholder support details, finalize customer-facing policy content, review Supabase quota warning, and implement retention/erasure operations before general customer traffic.
+- Read `ACCESS_VERIFICATION_2026-09-21.md`, `FUNNEL_TRACKING.md`, `SUPABASE_LOGIN_SETUP.md`, `PRODUCTION_LAUNCH_PLAN.md`, and sibling iOS `WEB_QUIZ_PROFILE_HANDOFF.md`. Reference repositories are read-only and have not been pushed to.
+- Local documentation vault: `C:/Users/Bablikas/Desktop/geberal`, project `01 Projects/RELUSTT Web`. This vault is not uploaded with the source repositories.
+
+## Historical snapshot — 2026-09-16
+
+The following records what was true on September 16. Its local-only/ZIP instructions, old commit IDs and blockers are superseded by the continuation point above.
 
 ## Critical state
 

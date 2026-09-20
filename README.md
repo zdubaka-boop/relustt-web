@@ -18,10 +18,11 @@ The current website work is on **`funnel-question-rebuild`**, not `main`:
 ```sh
 git clone --branch funnel-question-rebuild https://github.com/zdubaka-boop/relustt-web.git
 cd relustt-web
-node --test tests/*.test.cjs
+npm ci
+npm test
 ```
 
-The matching iOS changes are on `main` in
+The matching quiz-profile iOS changes are on `codex/web-quiz-profile-sync`, based on the latest `main`, in
 https://github.com/zdubaka-boop/unbound-price-blocking-backup.
 Environment secrets, CLI login sessions, `.vercel/`, and Supabase's local link
 are intentionally not committed. Authenticate on the new computer, relink the
@@ -31,21 +32,24 @@ team `team_qSVu5nbstIbzSpMbKDGquEnQ`), and link Supabase with
 projects or reset the remote database. Recreate secrets through secure
 environment configuration; do not copy credentials from chat into source.
 
-Handoff status, 2026-09-20: 23 local Node checks passed, database ownership/RLS
-checks passed with fixture writes rolled back, and the iOS simulator build
-passed. Code changes are not yet deployed or distributed. Apple/Google OAuth,
-Vercel production environment configuration, the Stripe webhook, a rotated
-Stripe API key, full payment-to-app verification, and iOS distribution remain.
-Only CLI/API work is authorized; do not request computer-control access.
+Handoff status, 2026-09-21: the website is deployed to production, both OAuth
+providers are enabled, and production Stripe configuration and the webhook are
+active. All 31 local Node checks and live transactional database isolation checks
+passed. Live unpaid $5 Checkout creation and homepage telemetry were verified;
+the Checkout session was expired without a charge. Actual provider account
+creation, paid activation, and access in the matching iPhone build still need
+end-to-end verification. See `ACCESS_VERIFICATION_2026-09-21.md` for evidence,
+deployment identity and remaining limits; `CLOUD_HANDOFF.md` for continuation.
 
 ## Stack
 
-Plain HTML/CSS/JS plus Vercel Node functions. There is no build step or npm
-dependency installation.
+Plain HTML/CSS/JS plus Vercel Node functions. No frontend compilation is needed.
+Run `npm ci` to install the locked PGlite development dependency for SQL tests.
 
 | File | Purpose |
 |---|---|
-| `index.html` | Entire page markup |
+| `index.html` | Homepage quiz entry, with the same tracking/scripts as `funnel.html` |
+| `landing.html` | Preserved original marketing page |
 | `styles.css` | All styling |
 | `script.js` | Starfield canvas, scroll reveal, stat counters, FAQ accordion |
 | `funnel.html` / `funnel.js` / `funnel.css` | Production onboarding funnel and personalized paywall |
@@ -80,7 +84,10 @@ Then visit http://localhost:8000 for static layout only.
 
 ## Required configuration
 
-Vercel requires these variables in Development, Preview, and Production:
+Configure these variables in each environment where its checkout/login runs.
+Use separate test-mode Stripe configuration in Preview/Development; only the
+funnel Price is required for the quiz. Legacy monthly/yearly Price variables
+are needed only for the separate direct-plan checkout:
 
 ```text
 PUBLIC_SITE_URL
@@ -159,36 +166,30 @@ Never expose `SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_SECRET_KEY`, or
   at the real RevenueCat offering, not its previous preview-only price choices.
   StoreKit/RevenueCat supplies the actual localized price and purchase terms.
 
-### Verification and setup status (2026-09-19)
+### Verification and setup status (2026-09-21)
 
 The correct Supabase project is linked. Both web subscription migrations were
 applied without changing the existing community schema. The two earlier
 community migrations in this repo were fetched from that project's history.
 
-Run local API checks with `node --test tests/*.test.cjs`. Run transactional
+Run local checks with `npm ci` then `npm test`. Run transactional
 database isolation checks with
-`supabase db query --linked --file tests/subscription-access.sql`; its fixture
+`supabase db query --linked --project-ref bnycfsujwbusxyeqnrhf --file tests/subscription-access.sql`; its fixture
 writes are rolled back and it never creates or modifies auth accounts.
 
-Apple and Google providers were verified disabled and still require provider
-configuration. The live `relustt` Stripe account now has product
-`relustt_web_membership_v1` and monthly Price `price_1UHLIHE0Q5KzSNmvTXXSdrTF`.
-Set that Price as `STRIPE_PRICE_FUNNEL_MONTHLY` in **Production only**. Test and
-preview environments need their own test-mode key, Price, and webhook secret.
-No customer, subscription, payment, or webhook endpoint was created during
-product setup. `scripts/setup-stripe-funnel.cjs` checks for the existing Price
-before creating anything, accepts a key through hidden input, and never saves it.
+Apple and Google providers and their web/app redirects are configured. Production
+uses the verified active USD $29.50 monthly Price `price_1UHLIHE0Q5KzSNmvTXXSdrTF`.
+Vercel stores the production Stripe key and signing secret as sensitive variables;
+the subscription webhook is enabled. Preview still needs separate test-mode
+configuration. Live unpaid $5 Checkout creation succeeded and was expired; no
+charge, customer or subscription was created. Homepage tracking wrote one smoke
+session and three events to Supabase, tagged `utm_source=deployment_verification`.
 
-The later `--readiness` check confirmed live charges and payouts are enabled,
-card payments are active, and Stripe reports no currently due, past-due, or
-pending-verification requirements. No `relustt.site` webhook was configured.
-Live Checkout amount checks were planned but not run before this handoff;
-the passing checkout tests are isolated tests, not completed payments.
-
-Vercel production configuration and complete OAuth/payment
-round-trip testing remain pending. Do not treat mocked checkout tests as a
-successful real purchase. Rotate any live secret pasted into a conversation,
-then add it directly to the secure environment; never commit it.
+The current website deployment is `dpl_4HXwHD4D74JLDVoLdaiXfzm5KTP4`. Both tracking
+migrations are applied. Actual provider account creation, paid activation and
+matching iPhone access remain unverified. See the audit for precise evidence.
+Rotate the chat-supplied live key before general release and replace placeholder
+support/policy details. Do not confuse deployed code with a completed paid journey.
 
 ### Funnel billing: paid introductory week
 
@@ -231,10 +232,15 @@ preview, three existing site testimonials, FAQs, and return-to-offer buttons.
 See [Quiz archetypes](FUNNEL_ARCHETYPES.md) for the six profiles, assignment
 logic, copy decisions, and tests. The resolver is `funnel-archetypes.js`.
 
-Answers and the name persist in session storage in the same browser tab. The
-intimacy-concern follow-up is now explicitly saved too. Answers are not stored
-on the server or transferred to the iOS app; safe words and signatures remain
-memory-only. Checkout sends only the selected tier and pathway.
+Answers and the name persist in session storage and are queued for the first-party
+quiz API. The tracking migrations were applied on 2026-09-20; after web deployment, Supabase stores
+journeys and conversion events; purchase activation links a frozen answer snapshot
+to the Auth account for iOS retrieval. Safe words and signatures remain memory-only.
+See [Tracking setup and reports](FUNNEL_TRACKING.md) and
+[Apple/Google configuration](SUPABASE_LOGIN_SETUP.md). These changes still require
+web deployment, provider configuration and a new iOS build. Local verification passed
+31 tests and browser tracking checks; the live database smoke test passed with its
+synthetic records rolled back.
 
 The seven-minute display timer starts on the first offer visit, survives reload
 in the same tab, shifts from green to red, and stays at `00:00`. Per the user's

@@ -1,7 +1,7 @@
 const { claimCookie, clearClaimCookie, hashClaimSecret, secretsMatch } = require('../server/claims');
 const { methodNotAllowed, parseJsonBody, sendJson } = require('../server/http');
 const {
-  getAuthenticatedUser, getBillingSubscription, getClaim, getClaimByCheckoutSession, syncStripeSubscription,
+  getAuthenticatedUser, getBillingSubscription, getClaim, getClaimByCheckoutSession, syncStripeSubscription, updateClaim,
 } = require('../server/supabase');
 const { hasActiveSubscription, normalizeSubscription, retrieveCheckoutSession, subscriptionId } = require('../server/stripe');
 
@@ -52,6 +52,10 @@ module.exports = async function handler(request, response) {
     if (!subscriptionId(subscription) || typeof subscription !== 'object' ||
       subscription.metadata?.purchase_claim_id !== claim.id) {
       return sendJson(response, 409, { error: 'Subscription details are still processing.' });
+    }
+    // Only server-verified payment can turn a quiz into a purchased app profile.
+    if (checkout.payment_status === 'paid' && claim.funnel_session_id && !claim.paid_at) {
+      await updateClaim(claim.id, { paid_at: observedAt });
     }
     const billing = await syncStripeSubscription(normalizeSubscription(subscription), observedAt, {
       id: claim.id, userId: user.id, secretHash: hashClaimSecret(cookieClaim.secret), sessionId,
