@@ -164,6 +164,7 @@ test('API maps each allowed funnel plan to a server-owned amount and the single 
 test('custom checkout keeps paid week and claim metadata, without hosted-only parameters', async () => {
   const { stripe, requests } = stripeHarness();
   await stripe.createCheckoutSession({ ...checkoutArgs, introAmountCents: 500, customUi: true });
+  assert.equal(requests[1].form.get('payment_method_types[1]'), 'link');
   const { form, headers } = requests[1];
   assert.equal(headers['Stripe-Version'], '2025-03-31.basil');
   assert.equal(form.get('ui_mode'), 'custom');

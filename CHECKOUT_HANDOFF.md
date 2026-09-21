@@ -1,9 +1,23 @@
 # RELUSTT checkout — continue on another computer
 
 Updated 2026-09-22. **Deployed and verified with real Stripe fields.** Production
-deployment `dpl_7Ayjbdi3TMCcwAH75QoAcjaF1EhW` is READY at https://relustt.site.
+deployment `dpl_3NwkwTd6dhTJTroC7XpHrwT5MfSx` is READY at https://relustt.site.
 The matching production publishable key and `STRIPE_CHECKOUT_UI=custom` are
 configured in Vercel. The September 21 checks predate this redesign.
+
+## Wallet and copy follow-up — 2026-09-22
+
+- Added Express Checkout with Apple Pay, Google Pay and Link. Custom Sessions now allow `card` and `link`; hosted rollback/legacy billing is unchanged.
+- Registered `relustt.site` in live Stripe payment-method domains. Stripe reports Apple Pay, Google Pay and Link active. Previously only `checkout.stripe.com` was registered.
+- Removed Stripe's repeated card mandate using its supported terms option. One compact line above both payment routes states the selected paid week price and $29.50 monthly renewal. The original long renewal sentence and redundant authorization sentence are gone.
+- Link is enabled in the express row but disabled inside the Payment Element to avoid the duplicate optional email/phone/name signup form. Do not remove the express Link button when simplifying the card form.
+- Wallet confirmation forwards Stripe's event through the same server-verified activation path. Wallets use their collected email; the external card-email field does not block wallet payments. Changed totals and concurrent submissions block both routes. Unsupported wallets leave the card form available.
+- 40 unit/API tests and mocked responsive browser tests passed, including wallet confirmation failure/retry, duplicate prevention, changed amount rejection, and hidden unsupported-wallet UI. A live unpaid API Session accepted card/Link and was explicitly expired without a charge.
+- Apple Pay and Link buttons rendered in the in-app browser. Google Pay is configured but was not offered in that environment. Completed wallet payment and Google Pay on an eligible browser still need verification. No payment was submitted.
+
+References: https://docs.stripe.com/js/custom_checkout/create_express_checkout_element,
+https://docs.stripe.com/js/custom_checkout/confirm,
+https://docs.stripe.com/js/custom_checkout/create_payment_element.
 
 ## Deployment verification — 2026-09-22
 

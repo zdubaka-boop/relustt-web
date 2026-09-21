@@ -7,7 +7,7 @@
   back.searchParams.set('cancelled', '1');
   if (params.get('path') === 'performance') back.searchParams.set('path', 'performance');
   $('closeCheckout').href = back.pathname + back.search;
-  let checkout, actions, paymentElement, details;
+  let checkout, actions, paymentElement, expressElement, details;
   let loading = false, submitting = false, paymentReady = false, validTotal = false;
 
   function error(message) {
@@ -18,6 +18,7 @@
     $('payButton').disabled = submitting || !paymentReady || !validTotal;
     $('payButtonText').textContent = submitting ? 'Processing…' : 'Unlock my plan';
     $('checkoutPayment').setAttribute('aria-busy', String(loading || submitting));
+    $('expressCheckout').inert = submitting || !validTotal;
   }
   function displaySession(session) {
     // Read Stripe's actual total, as required by Checkout, not a query-string price.
@@ -38,6 +39,7 @@
     error(''); updateButton();
     $('retryButton').hidden = true;
     $('paymentForm').hidden = true;
+    $('expressCheckout').hidden = true;
     $('checkoutLoading').hidden = false;
     try {
       if (!sessionId || !/^cs_[a-zA-Z0-9_]+$/.test(sessionId)) throw new Error('Return to your plan to start secure checkout.');
@@ -50,6 +52,7 @@
       if (!response.ok) throw new Error(details.error || 'Your payment form could not load.');
       if (details.status === 'complete') { location.assign(details.activationUrl); return; }
       paymentElement?.destroy();
+      expressElement?.destroy();
       const stripe = Stripe(details.publishableKey);
       checkout = stripe.initCheckout({
         clientSecret: details.clientSecret,
@@ -78,8 +81,10 @@
       const activeCheckout = checkout;
       checkout.on('change', session => { if (checkout === activeCheckout) displaySession(session); });
       const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: details.currency });
-      $('checkoutRenewal').textContent = `${money.format(details.introAmountCents / 100)} today for your first ${details.introDays} days. Then ${money.format(details.renewalAmountCents / 100)} per month until canceled. Cancel before renewal to avoid the next charge.`;
-      paymentElement = checkout.createPaymentElement({ layout: 'tabs', wallets: { link: 'never' } });
+      $('checkoutRenewal').textContent = `${money.format(details.introAmountCents / 100)} for ${details.introDays} days, then ${money.format(details.renewalAmountCents / 100)}/month. Cancel anytime.`;
+      // Show the billing schedule once above both payment routes.
+      // Link has its own express button; avoid a second Link signup form here.
+      paymentElement = checkout.createPaymentElement({ layout: 'tabs', terms: { card: 'never' }, wallets: { link: 'never' } });
       paymentElement.on('ready', () => { paymentReady = true; updateButton(); });
       paymentElement.on('loaderror', () => {
         paymentReady = false; updateButton();
@@ -88,6 +93,32 @@
       });
       $('paymentForm').hidden = false;
       paymentElement.mount('#paymentElement');
+      // Stripe owns wallet eligibility and collects the wallet email. A wallet
+      // failure must never prevent the independent card form from loading.
+      try {
+        expressElement = checkout.createExpressCheckoutElement({
+          buttonHeight: 48,
+          paymentMethods: { applePay: 'always', googlePay: 'always', link: 'auto' },
+          layout: { maxColumns: 3, overflow: 'never' },
+        });
+        const showWallets = (methods) => {
+          if (checkout !== activeCheckout) return;
+          $('expressCheckout').hidden = !methods || !Object.values(methods).some(Boolean);
+        };
+        expressElement.on('ready', ({ availablePaymentMethods }) => showWallets(availablePaymentMethods));
+        expressElement.on('availablepaymentmethodschange', ({ paymentMethods }) => showWallets(paymentMethods));
+        expressElement.on('loaderror', () => { $('expressCheckout').hidden = true; });
+        expressElement.on('confirm', (event) => {
+          if (checkout !== activeCheckout || submitting || !validTotal) {
+            event.paymentFailed({ reason: 'fail' });
+            return;
+          }
+          confirmPayment({ expressCheckoutConfirmEvent: event });
+        });
+        expressElement.mount('#expressCheckoutElement');
+      } catch (_) {
+        $('expressCheckout').hidden = true;
+      }
     } catch (failure) {
       error(failure.message || 'Your payment form could not load. Please try again.');
       $('retryButton').hidden = !sessionId;
@@ -97,12 +128,11 @@
       updateButton();
     }
   }
-  $('paymentForm').addEventListener('submit', async (event) => {
-    event.preventDefault();
-    if (submitting || !actions || !paymentReady || !validTotal || !$('paymentForm').reportValidity()) return;
+  async function confirmPayment(options) {
+    if (submitting || !actions || !validTotal) return;
     submitting = true; error(''); updateButton();
     try {
-      const result = await actions.confirm({ email: $('paymentEmail').value.trim() });
+      const result = await actions.confirm(options);
       if (result.type === 'error') throw new Error(result.error.message);
       // Never unlock access in the browser. The existing activation endpoint
       // verifies the paid Session and subscription before linking the account.
@@ -111,6 +141,11 @@
       error(failure.message || 'Payment could not be completed. Please check your details and try again.');
       submitting = false; updateButton();
     }
+  }
+  $('paymentForm').addEventListener('submit', (event) => {
+    event.preventDefault();
+    if (!paymentReady || !$('paymentForm').reportValidity()) return;
+    confirmPayment({ email: $('paymentEmail').value.trim() });
   });
   $('retryButton').addEventListener('click', start);
   start();

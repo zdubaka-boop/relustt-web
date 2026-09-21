@@ -10,9 +10,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="payment.css?v=1" />
+  <link rel="stylesheet" href="payment.css?v=2" />
   <script src="https://js.stripe.com/clover/stripe.js" defer></script>
-  <script src="payment.js?v=1" defer></script>
+  <script src="payment.js?v=2" defer></script>
 </head>
 <body>
   <a class="checkout-close" id="closeCheckout" href="/funnel?step=your-plan&amp;cancelled=1" aria-label="Return to your plan">×</a>
@@ -23,6 +23,7 @@
       <h1 class="checkout-eyebrow">Secure payment</h1>
       <span class="checkout-rule" aria-hidden="true"></span>
       <p class="checkout-total">In total today: <strong id="checkoutTotal">—</strong></p>
+      <p class="checkout-renewal" id="checkoutRenewal"></p>
     </header>
 
     <section aria-label="Payment details" class="checkout-payment" id="checkoutPayment" aria-busy="true">
@@ -31,17 +32,20 @@
         <span>Preparing your secure payment…</span>
       </div>
       <form id="paymentForm" hidden>
+        <div id="expressCheckout" class="checkout-express" hidden>
+          <div id="expressCheckoutElement"></div>
+          <div class="checkout-divider">or pay by card</div>
+        </div>
         <div id="paymentElement"></div>
         <div class="email-field">
           <label for="paymentEmail">Email address</label>
           <input id="paymentEmail" type="email" name="email" autocomplete="email" inputmode="email" placeholder="you@example.com" required maxlength="254" />
         </div>
-        <p class="checkout-renewal" id="checkoutRenewal"></p>
         <button class="checkout-submit" id="payButton" type="submit" disabled>
           <svg aria-hidden="true" width="16" height="18" viewBox="0 0 16 18" fill="none"><rect x="2" y="8" width="12" height="9" rx="2" fill="currentColor"/><path d="M5 8V5a3 3 0 0 1 6 0v3" stroke="currentColor" stroke-width="2"/></svg>
           <span id="payButtonText">Unlock my plan</span>
         </button>
-        <p class="checkout-terms">By paying, you agree to the <a href="/terms" target="_blank" rel="noopener noreferrer">Terms</a> and <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>, and authorize recurring charges until you cancel.</p>
+        <p class="checkout-terms">By paying, you agree to the <a href="/terms" target="_blank" rel="noopener noreferrer">Terms</a> and <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.</p>
       </form>
       <p class="checkout-error" id="checkoutError" role="alert" hidden></p>
       <button class="checkout-retry" id="retryButton" type="button" hidden>Try loading again</button>

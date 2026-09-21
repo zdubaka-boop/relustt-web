@@ -70,6 +70,7 @@ async function createCheckoutSession({ priceId, introAmountCents, claimId, succe
     form.set('payment_method_collection', 'always');
     // Card payments settle before the existing synchronous activation flow.
     form.set('payment_method_types[0]', 'card');
+    if (customUi) form.set('payment_method_types[1]', 'link');
     form.set('allow_promotion_codes', 'false');
     if (!customUi) form.set('custom_text[submit][message]', `$${(introAmountCents / 100).toFixed(2)} today for 7 days, then $29.50 every month until canceled.`);
     form.set('metadata[intro_amount_cents]', String(introAmountCents));
