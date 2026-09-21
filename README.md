@@ -11,11 +11,13 @@ Vercel project: `rostweb`
 
 Supabase project: `bnycfsujwbusxyeqnrhf`
 
-**2026-09-22 checkout update — source only, not deployed:** the funnel now has an
+**2026-09-22 checkout update — deployed:** the funnel now has an
 Oriano Moon-style, single-column payment page in RELUSTT violet/cyan, using
 Stripe-hosted secure Elements. Read [CHECKOUT_HANDOFF.md](CHECKOUT_HANDOFF.md)
-before deploying from another device. `STRIPE_PUBLISHABLE_KEY` is newly required
-for this page; existing prices, webhook, claims, login and iOS access are preserved.
+for the deployment evidence and continuation checklist. The matching production
+`STRIPE_PUBLISHABLE_KEY` is configured; existing prices, webhook, claims, login
+and iOS access are preserved. All four tiers and real desktop/mobile Stripe fields
+were checked without submitting payment. Actual paid activation remains unverified.
 The September 21 production verification below predates this checkout redesign.
 
 ## Continue on another computer

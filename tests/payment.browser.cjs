@@ -61,7 +61,7 @@ window.Stripe = () => ({initCheckout: () => {
   const base = `http://127.0.0.1:${server.address().port}`;
   let browser;
   try {
-    browser = await chromium.launch({headless:true});
+    browser = await chromium.launch({headless:true, ...(process.env.PLAYWRIGHT_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH } : {})});
     const page = await browser.newPage({viewport:{width:1280,height:1100}});
     const errors=[]; page.on('pageerror',error=>errors.push(error.message));
     let response={...config}, responseStatus=200, apiCalls=0;

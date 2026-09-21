@@ -1,8 +1,19 @@
 # RELUSTT checkout — continue on another computer
 
-Updated 2026-09-22. **Source only; not deployed.** The user requested GitHub
-upload and will deploy from another device. The September 21 production checks
-in the other documents predate this redesign.
+Updated 2026-09-22. **Deployed and verified with real Stripe fields.** Production
+deployment `dpl_7Ayjbdi3TMCcwAH75QoAcjaF1EhW` is READY at https://relustt.site.
+The matching production publishable key and `STRIPE_CHECKOUT_UI=custom` are
+configured in Vercel. The September 21 checks predate this redesign.
+
+## Deployment verification — 2026-09-22
+
+- Reviewed latest upstream `4ff35ac` in isolated worktree `relustt-checkout-deploy`, preserving unrelated OTO drafts in the main local checkout.
+- `npm ci` and all 40 automated tests passed. Mock browser checks passed at 320/390/768/1440 widths, including declined-payment retry, duplicate-submit prevention, amount changes and activation routing.
+- Real production Stripe Elements rendered card/expiry/CVC/country fields on desktop and a fresh 390px mobile page, with the correct amount, renewal disclosure, enabled submit button and no JavaScript errors. No card data was entered and the payment button was not submitted.
+- All four live tiers created owned custom Sessions and returned the expected 500/900/1300/1767 cents, seven paid days and 2950-cent monthly renewal configuration. Missing claim cookie returns 403; expired owned Session returns 410 and the page hides payment fields with a clear expiry message.
+- Seven unpaid verification Sessions (one original hosted configuration probe and six custom-page probes) were explicitly expired. None created a customer, subscription or charge. Unclaimed records remain as smoke-test artifacts; they must not count as conversions.
+- Production error-level log query returned no entries during the verification window. This is a bounded smoke check, not ongoing monitoring.
+- Completed payment, 3DS, wallet eligibility, actual provider signup and iPhone entitlement remain unverified. Keep these acceptance checks separate from successful real-field rendering.
 
 ## Design and implementation
 
@@ -90,6 +101,9 @@ To run browser checks with an existing Playwright installation:
 PLAYWRIGHT_MODULE=/absolute/path/to/node_modules/playwright node tests/payment.browser.cjs
 ```
 
+For an installed Chrome/Chromium binary, optionally set `PLAYWRIGHT_EXECUTABLE_PATH`
+to its full executable path. This avoids requiring Playwright's downloaded browser.
+
 Desktop/mobile mock screenshots are written to the OS temporary directory
 (override with `CHECKOUT_SCREENSHOT_DIR`). No production APIs are contacted.
 
@@ -100,7 +114,8 @@ cross-account rejection. After deployment, an unpaid production Session can
 verify appearance without charging anyone. Do not make a real purchase without
 explicit authorization. Real payment and wallet behavior remain unverified.
 
-**No redesign deployment, new live Session or purchase was performed.**
+The earlier source-only checkpoint is superseded by the deployment verification above.
+No completed purchase was performed.
 
 References: [Stripe custom UI mode](https://docs.stripe.com/changelog/basil/2025-03-31/add-checkout-session-custom-ui-mode),
 [Checkout total and confirmation](https://docs.stripe.com/js/custom_checkout/confirm),

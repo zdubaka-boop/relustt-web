@@ -3,17 +3,19 @@
 Updated 2026-09-22. Start with the new checkout handoff; the dated September 21
 production evidence and September 16 record predate the checkout redesign.
 
-## New checkout — 2026-09-22, not deployed
+## New checkout — deployed 2026-09-22
 
 The user requested Oriano Moon's checkout layout with RELUSTT colors, then
-explicitly requested **GitHub upload only; deployment from another computer**.
+initially requested GitHub upload only, then authorized production deployment.
 See [CHECKOUT_HANDOFF.md](CHECKOUT_HANDOFF.md). New `payment.*` files implement
 the centered dark checkout using Stripe-hosted Elements. The existing create
 endpoint returns its in-site URL for funnel plans; legacy plans stay hosted.
-New `STRIPE_PUBLISHABLE_KEY` configuration is required. Prices, webhook,
+Production `STRIPE_PUBLISHABLE_KEY` and custom checkout mode are now configured. Prices, webhook,
 Supabase ownership/claims, OAuth and iOS RevenueCat billing are unchanged.
-No checkout redesign deployment, provider configuration change or purchase was
-performed. Finish the documented live/test-mode checks on the deploying device.
+Deployment `dpl_7Ayjbdi3TMCcwAH75QoAcjaF1EhW` is live at https://relustt.site.
+All 40 tests, mocked responsive checks, real Stripe desktop/mobile fields and
+all four live Session amounts passed. Unpaid Sessions were expired without
+charges. Completed payment/3DS/provider/iPhone acceptance checks still remain.
 
 ## Current continuation point — 2026-09-21
 
