@@ -27,7 +27,6 @@ button, a, input { -webkit-tap-highlight-color: transparent; }
 .email-field input { width: 100%; height: 46px; border: 1px solid #b39aff38; border-radius: 10px; padding: 10px 13px; background: #1c1532; color: #f5f2ff; font-size: 16px; box-shadow: none; }
 .email-field input::placeholder { color: #a79bbd; }
 .email-field input:focus { outline: none; border-color: #bda6ff; box-shadow: 0 0 0 2px #bda6ff1f; }
-.checkout-renewal { margin: 8px 0 0; color: #c4b9d8; font-size: 13px; line-height: 1.6; text-align: center; }
 .checkout-express { margin-bottom: 20px; }
 .checkout-express[inert] { opacity: .55; }
 .checkout-divider { display: flex; align-items: center; gap: 16px; margin-top: 22px; color: #b8accd; font-size: 12px; }
@@ -45,7 +44,6 @@ button, a, input { -webkit-tap-highlight-color: transparent; }
 .trust-badges { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; }
 .badge { display: inline-flex; align-items: center; justify-content: center; min-width: 36px; height: 23px; padding: 2px 7px; border-radius: 3px; font-size: 12px; font-weight: 800; font-style: italic; line-height: 1; color: white; }
 .badge-visa { background: #1a1f71; }.badge-mc { background: white; color: #1a1f71; font-style: normal; }.badge-amex { background: #006fcf; }.badge-stripe { background: #635bff; font-style: normal; }
-.checkout-next { color: #b8accd; font-size: 12px; margin: 16px 0 0; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (max-width: 720px) { body { padding: 58px 18px max(42px, env(safe-area-inset-bottom)); } .checkout-logo { font-size: 26px; margin-bottom: 18px; } .checkout-hero { margin-bottom: 34px; } .checkout-star { margin-bottom: 26px; } .checkout-eyebrow { margin-bottom: 14px; } .checkout-rule { margin-top: 18px; } }
 @media (prefers-reduced-motion: reduce) { .checkout-spinner { animation: none; } }

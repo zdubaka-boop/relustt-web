@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="payment.css?v=2" />
   <script src="https://js.stripe.com/clover/stripe.js" defer></script>
-  <script src="payment.js?v=2" defer></script>
+  <script src="payment.js?v=4" defer></script>
 </head>
 <body>
   <a class="checkout-close" id="closeCheckout" href="/funnel?step=your-plan&amp;cancelled=1" aria-label="Return to your plan">×</a>
@@ -23,7 +23,6 @@
       <h1 class="checkout-eyebrow">Secure payment</h1>
       <span class="checkout-rule" aria-hidden="true"></span>
       <p class="checkout-total">In total today: <strong id="checkoutTotal">—</strong></p>
-      <p class="checkout-renewal" id="checkoutRenewal"></p>
     </header>
 
     <section aria-label="Payment details" class="checkout-payment" id="checkoutPayment" aria-busy="true">
@@ -56,7 +55,6 @@
       <div class="trust-badges" aria-label="Visa, Mastercard, American Express. Processed by Stripe.">
         <span class="badge badge-visa">VISA</span><span class="badge badge-mc">MC</span><span class="badge badge-amex">AMEX</span><span class="badge badge-stripe">stripe</span>
       </div>
-      <p class="checkout-next">After payment, connect Apple or Google to access RELUSTT.</p>
     </footer>
     <noscript>JavaScript is required for secure payment. Please enable it and reload this page.</noscript>
   </main>

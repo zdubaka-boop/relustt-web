@@ -80,11 +80,11 @@
       displaySession(actions.getSession());
       const activeCheckout = checkout;
       checkout.on('change', session => { if (checkout === activeCheckout) displaySession(session); });
-      const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: details.currency });
-      $('checkoutRenewal').textContent = `${money.format(details.introAmountCents / 100)} for ${details.introDays} days, then ${money.format(details.renewalAmountCents / 100)}/month. Cancel anytime.`;
-      // Show the billing schedule once above both payment routes.
       // Link has its own express button; avoid a second Link signup form here.
-      paymentElement = checkout.createPaymentElement({ layout: 'tabs', terms: { card: 'never' }, wallets: { link: 'never' } });
+      paymentElement = checkout.createPaymentElement({
+        layout: 'tabs', terms: { card: 'never' }, wallets: { link: 'never' },
+        fields: { billingDetails: { address: 'if_required' } },
+      });
       paymentElement.on('ready', () => { paymentReady = true; updateButton(); });
       paymentElement.on('loaderror', () => {
         paymentReady = false; updateButton();

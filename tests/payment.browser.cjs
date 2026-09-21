@@ -91,7 +91,6 @@ window.Stripe = () => ({initCheckout: () => {
     await open();
     await page.waitForFunction(()=>!document.getElementById('payButton').disabled);
     assert.equal(await page.locator('#checkoutTotal').textContent(),'$5.00');
-    assert.match(await page.locator('#checkoutRenewal').textContent(),/\$5\.00.*7 days.*\$29\.50\/month/);
     await page.waitForFunction(()=>!document.getElementById('expressCheckout').hidden);
     assert.equal(await page.evaluate(()=>window.cardOptions.terms.card),'never');
     assert.equal(await page.evaluate(()=>window.cardOptions.wallets.link),'never','Link uses the express button without a duplicate signup form');

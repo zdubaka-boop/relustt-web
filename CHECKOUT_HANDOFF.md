@@ -1,11 +1,19 @@
 # RELUSTT checkout — continue on another computer
 
 Updated 2026-09-22. **Deployed and verified with real Stripe fields.** Production
-deployment `dpl_3NwkwTd6dhTJTroC7XpHrwT5MfSx` is READY at https://relustt.site.
+deployment `dpl_2Z7vyzZJTM9XpfsRoxu1TJEBrJ1n` is published at https://relustt.site.
 The matching production publishable key and `STRIPE_CHECKOUT_UI=custom` are
 configured in Vercel. The September 21 checks predate this redesign.
 
 ## Wallet and copy follow-up — 2026-09-22
+
+Later user-directed simplification: removed both the compact billing sentence
+and the “After payment, connect Apple or Google” footer from `/payment`.
+Existing offer-page billing copy, terms links, amounts, schedule and activation
+behavior are unchanged. Card billing address collection is now `if_required`:
+Stripe may request a country/address only when required, rather than always
+showing the country selector. This supersedes the compact-line UI described
+below. Mock responsive checkout tests passed after these changes.
 
 - Added Express Checkout with Apple Pay, Google Pay and Link. Custom Sessions now allow `card` and `link`; hosted rollback/legacy billing is unchanged.
 - Registered `relustt.site` in live Stripe payment-method domains. Stripe reports Apple Pay, Google Pay and Link active. Previously only `checkout.stripe.com` was registered.
