@@ -1,0 +1,107 @@
+# RELUSTT checkout — continue on another computer
+
+Updated 2026-09-22. **Source only; not deployed.** The user requested GitHub
+upload and will deploy from another device. The September 21 production checks
+in the other documents predate this redesign.
+
+## Design and implementation
+
+Reference: Oriano Moon's `/en/moon/checkout`, inspected live and in its source
+and saved rendered screenshot. RELUSTT reproduces its centered 780px column,
+letter-spaced brand, small accent, secure-payment heading, today's total, card
+form, full-width CTA and payment badges, using violet/cyan instead of navy/gold.
+No Oriano credentials, Solidgate integration, products or analytics were copied.
+
+- `payment.html`, `payment.css`, `payment.js`: custom in-site checkout, mobile
+  layout, loading, errors, retry and return-to-plan navigation.
+- `api/create-checkout-session.js`: funnel plans now return `/payment?session_id=…`.
+  The existing quiz follows that URL; its answers/tracking are unchanged.
+- `server/stripe.js`: creates custom Checkout Sessions, with this request alone
+  pinned to Stripe API `2025-03-31.basil`, as is the custom-page Session read.
+  No account/webhook version change.
+- `api/checkout-details.js`: verifies the HttpOnly purchase-claim cookie,
+  expiry, Session ownership, status and amount before returning configuration.
+  Responses are `no-store`; client secrets never enter URLs, storage or logs.
+- Card/expiry/CVC fields are hosted by Stripe in its secure iframe. The website
+  never collects card numbers itself. Email is passed to Stripe on confirmation.
+- The displayed total comes from Stripe's Checkout object. A changed amount
+  disables payment. Duplicate submissions are blocked; declines can be retried.
+- Successful completion returns to the existing `/activate` Apple/Google
+  connection screen. Only the server-verified payment/subscription claim unlocks
+  access; a browser button or success URL does not grant an entitlement.
+
+Billing stays **$5 / $9 / $13 / $17.67 for the first 7 days**, then **$29.50/month**.
+The introductory week is paid. The same monthly Price and one-time intro line
+item are used. Prices, schedules, tax behavior, webhooks, Supabase ownership,
+OAuth and app access were not changed. The new page states the paid period
+without the hosted page's confusing “7 days free” line-item label.
+
+Legacy `/checkout` monthly/yearly plans still redirect to hosted Stripe Checkout.
+The iOS app still uses Apple/RevenueCat, not this website payment form.
+
+## Get the source
+
+```sh
+git clone --branch funnel-question-rebuild https://github.com/zdubaka-boop/relustt-web.git
+cd relustt-web
+npm ci
+npm test
+```
+
+For an existing clone, preserve its edits, switch to this branch and run
+`git pull --ff-only`. Website `main` is not the current funnel branch.
+
+## Required configuration before you deploy
+
+1. Keep the existing project, Stripe/Supabase accounts, monthly Price, webhook,
+   claims schema and OAuth configuration. No new migration is needed.
+2. Keep existing `PUBLIC_SITE_URL`, `STRIPE_SECRET_KEY`,
+   `STRIPE_PRICE_FUNNEL_MONTHLY`, `STRIPE_WEBHOOK_SECRET` and Supabase variables.
+3. **Add `STRIPE_PUBLISHABLE_KEY`**: the `pk_live_…` public key for the same
+   Stripe account as the production secret key. Test environments need matching
+   `pk_test_…`, `sk_test_…` and a test-mode $29.50 monthly Price. Never mix modes.
+4. `STRIPE_CHECKOUT_UI=custom` is the default. An emergency rollback is
+   `STRIPE_CHECKOUT_UI=hosted` plus redeployment. This affects newly created
+   Sessions; existing custom Sessions retain their own payment page.
+5. Deploy `payment.*`, the new API and the modified server code together.
+   Missing public-key configuration fails closed before creating a payment.
+6. Stripe.js loads directly from `https://js.stripe.com/clover/stripe.js`.
+   If hosting adds a CSP, allow Stripe's documented script/iframe/connection
+   origins; don't self-host the SDK. Register the payment domain in Stripe for
+   wallets, and verify supported/unsupported devices rather than assuming support.
+
+Secret keys, signing credentials and dashboard sessions are intentionally not
+in Git. Configure them securely on the other device, never in source files.
+
+## Verification and its limits
+
+- `npm test`: 40 checks, covering existing billing/claims/webhook/RLS/tracking
+  behavior and new checkout cookie, expiry, amount, compatibility and config cases.
+- `tests/payment.browser.cjs`: 320/390/768/1440-width layout, no overflow,
+  total/renewal copy, back route, decline/retry, duplicate submissions,
+  changed-price refusal, expired/missing Sessions and activation routing.
+- The real Clover Stripe.js initializer was checked to expose `initCheckout`.
+- Browser payment tests use **mock Stripe fields/API responses**. They do not
+  prove real Stripe rendering, 3DS, a charge, wallets or completed app activation.
+
+To run browser checks with an existing Playwright installation:
+
+```sh
+PLAYWRIGHT_MODULE=/absolute/path/to/node_modules/playwright node tests/payment.browser.cjs
+```
+
+Desktop/mobile mock screenshots are written to the OS temporary directory
+(override with `CHECKOUT_SCREENSHOT_DIR`). No production APIs are contacted.
+
+On the deploying device, first use separate Stripe test-mode configuration to
+test all four amounts with real fields, success, 3DS, decline, reload, expiry and
+back navigation. Verify Apple/Google linking, same-account app access and
+cross-account rejection. After deployment, an unpaid production Session can
+verify appearance without charging anyone. Do not make a real purchase without
+explicit authorization. Real payment and wallet behavior remain unverified.
+
+**No redesign deployment, new live Session or purchase was performed.**
+
+References: [Stripe custom UI mode](https://docs.stripe.com/changelog/basil/2025-03-31/add-checkout-session-custom-ui-mode),
+[Checkout total and confirmation](https://docs.stripe.com/js/custom_checkout/confirm),
+[Elements styling](https://docs.stripe.com/elements/appearance-api).

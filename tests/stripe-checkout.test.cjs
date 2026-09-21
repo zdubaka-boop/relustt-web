@@ -23,7 +23,7 @@ function stripeHarness(price = validPrice) {
       ? { required: () => 'test-only', ConfigurationError }
       : require(name),
     fetch: async (url, options) => {
-      requests.push({ url, method: options.method, form: new URLSearchParams(options.body) });
+      requests.push({ url, method: options.method, headers: options.headers, form: new URLSearchParams(options.body) });
       return { ok: true, json: async () => options.method === 'GET' ? price : { id: 'cs_test' } };
     },
   };
@@ -87,7 +87,7 @@ test('legacy direct plans keep their existing billing without an introductory pe
   assert.equal([...requests[0].form.keys()].some(key => key.includes('trial') || key.startsWith('line_items[1]')), false);
 });
 
-function handlerHarness(ingest = async () => { throw new Error('Unexpected quiz ingest'); }) {
+function handlerHarness(ingest = async () => { throw new Error('Unexpected quiz ingest'); }, env = {}) {
   const checkoutCalls = [];
   const configReads = [];
   const claims = [];
@@ -99,7 +99,7 @@ function handlerHarness(ingest = async () => { throw new Error('Unexpected quiz 
     },
     '../server/env': {
       ConfigurationError,
-      required: name => { configReads.push(name); return 'price_monthly_test'; },
+      required: name => { configReads.push(name); return Object.hasOwn(env, name) ? env[name] : name === 'STRIPE_PUBLISHABLE_KEY' ? 'pk_test_fixture' : 'price_monthly_test'; },
       siteUrl: () => 'https://example.test',
     },
     '../server/http': {
@@ -119,7 +119,7 @@ function handlerHarness(ingest = async () => { throw new Error('Unexpected quiz 
     },
     '../server/funnel-tracking': { TrackingError: class extends Error {}, ingest },
   };
-  const sandbox = { module: { exports: {} }, require: name => dependencies[name], console, Buffer };
+  const sandbox = { module: { exports: {} }, require: name => dependencies[name], console, Buffer, process: { env } };
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../api/create-checkout-session.js'), 'utf8'), sandbox);
   return { handler: sandbox.module.exports, checkoutCalls, configReads, claims };
 }
@@ -152,10 +152,48 @@ test('API maps each allowed funnel plan to a server-owned amount and the single 
     const response = { setHeader() {} };
     await handler({ method: 'POST', body: { plan, introAmountCents: 1, priceId: 'untrusted' } }, response);
     assert.equal(response.status, 200);
-    assert.deepEqual(configReads, ['STRIPE_PRICE_FUNNEL_MONTHLY']);
+    assert.deepEqual(configReads, ['STRIPE_PUBLISHABLE_KEY', 'STRIPE_PRICE_FUNNEL_MONTHLY']);
+    assert.equal(checkoutCalls[0].customUi, true);
+    assert.equal(response.body.url, 'https://example.test/payment?session_id=cs_test');
     assert.equal(checkoutCalls[0].introAmountCents, amount);
     assert.equal(checkoutCalls[0].priceId, 'price_monthly_test');
     assert.equal(checkoutCalls[0].cancelUrl, 'https://example.test/funnel.html?step=your-plan&cancelled=1');
+  }
+});
+
+test('custom checkout keeps paid week and claim metadata, without hosted-only parameters', async () => {
+  const { stripe, requests } = stripeHarness();
+  await stripe.createCheckoutSession({ ...checkoutArgs, introAmountCents: 500, customUi: true });
+  const { form, headers } = requests[1];
+  assert.equal(headers['Stripe-Version'], '2025-03-31.basil');
+  assert.equal(form.get('ui_mode'), 'custom');
+  assert.equal(form.get('return_url'), checkoutArgs.successUrl);
+  for (const key of ['success_url', 'cancel_url', 'custom_text[submit][message]']) assert.equal(form.has(key), false);
+  assert.equal(form.get('subscription_data[trial_period_days]'), '7');
+  assert.equal(form.get('line_items[1][price_data][unit_amount]'), '500');
+  assert.equal(form.get('metadata[purchase_claim_id]'), 'claim_test');
+  await stripe.retrieveCheckoutSession('cs_test', { customUi: true });
+  assert.equal(requests[2].headers['Stripe-Version'], '2025-03-31.basil');
+});
+
+test('hosted rollback and legacy plans retain their original Stripe redirect', async () => {
+  for (const [plan,env] of [['tier_5',{STRIPE_CHECKOUT_UI:'hosted'}], ['monthly',{}], ['yearly',{}]]) {
+    const { handler, checkoutCalls, configReads } = handlerHarness(undefined,env);
+    const response={setHeader(){}};
+    await handler({method:'POST',body:{plan}},response);
+    assert.equal(response.status,200);
+    assert.equal(response.body.url,'https://checkout.stripe.com/test');
+    assert.equal(checkoutCalls[0].customUi,false);
+    assert.equal(configReads.includes('STRIPE_PUBLISHABLE_KEY'),false);
+  }
+});
+
+test('missing or wrong public-key configuration does not create a claim or payment', async () => {
+  for (const key of ['', 'not-a-publishable-key']) {
+    const {handler,claims,checkoutCalls}=handlerHarness(undefined,{STRIPE_PUBLISHABLE_KEY:key});
+    const response={setHeader(){}};
+    await handler({method:'POST',body:{plan:'tier_5'}},response);
+    assert.equal(response.status,503);assert.equal(claims.length,0);assert.equal(checkoutCalls.length,0);
   }
 });
 

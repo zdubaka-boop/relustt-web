@@ -5,11 +5,12 @@ const FUNNEL_INTRO_AMOUNTS = new Set([500, 900, 1300, 1767]);
 const FUNNEL_MONTHLY_AMOUNT = 2950;
 const FUNNEL_INTRO_DAYS = 7;
 
-async function stripeRequest(path, { method = 'GET', form } = {}) {
+async function stripeRequest(path, { method = 'GET', form, apiVersion } = {}) {
   const response = await fetch(`https://api.stripe.com/v1${path}`, {
     method,
     headers: {
       Authorization: `Bearer ${required('STRIPE_SECRET_KEY')}`,
+      ...(apiVersion ? { 'Stripe-Version': apiVersion } : {}),
       ...(form ? { 'Content-Type': 'application/x-www-form-urlencoded' } : {}),
     },
     body: form ? form.toString() : undefined,
@@ -23,7 +24,7 @@ async function stripeRequest(path, { method = 'GET', form } = {}) {
   return payload;
 }
 
-async function createCheckoutSession({ priceId, introAmountCents, claimId, successUrl, cancelUrl }) {
+async function createCheckoutSession({ priceId, introAmountCents, claimId, successUrl, cancelUrl, customUi = false }) {
   const isIntroductoryPlan = introAmountCents !== undefined;
   if (isIntroductoryPlan) {
     if (!FUNNEL_INTRO_AMOUNTS.has(introAmountCents)) {
@@ -46,8 +47,14 @@ async function createCheckoutSession({ priceId, introAmountCents, claimId, succe
   form.set('mode', 'subscription');
   form.set('line_items[0][price]', priceId);
   form.set('line_items[0][quantity]', '1');
-  form.set('success_url', successUrl);
-  form.set('cancel_url', cancelUrl);
+  if (customUi) {
+    // Pin only this request, not the account or existing webhook API version.
+    form.set('ui_mode', 'custom');
+    form.set('return_url', successUrl);
+  } else {
+    form.set('success_url', successUrl);
+    form.set('cancel_url', cancelUrl);
+  }
   form.set('client_reference_id', claimId);
   form.set('metadata[purchase_claim_id]', claimId);
   form.set('subscription_data[metadata][purchase_claim_id]', claimId);
@@ -64,19 +71,22 @@ async function createCheckoutSession({ priceId, introAmountCents, claimId, succe
     // Card payments settle before the existing synchronous activation flow.
     form.set('payment_method_types[0]', 'card');
     form.set('allow_promotion_codes', 'false');
-    form.set('custom_text[submit][message]', `$${(introAmountCents / 100).toFixed(2)} today for 7 days, then $29.50 every month until canceled.`);
+    if (!customUi) form.set('custom_text[submit][message]', `$${(introAmountCents / 100).toFixed(2)} today for 7 days, then $29.50 every month until canceled.`);
     form.set('metadata[intro_amount_cents]', String(introAmountCents));
     form.set('subscription_data[metadata][intro_amount_cents]', String(introAmountCents));
     form.set('subscription_data[metadata][offer]', 'paid_week_then_monthly');
   } else {
     form.set('allow_promotion_codes', 'true');
   }
-  return stripeRequest('/checkout/sessions', { method: 'POST', form });
+  return stripeRequest('/checkout/sessions', {
+    method: 'POST', form, ...(customUi ? { apiVersion: '2025-03-31.basil' } : {}),
+  });
 }
 
-function retrieveCheckoutSession(sessionId) {
+function retrieveCheckoutSession(sessionId, { customUi = false } = {}) {
   const encoded = encodeURIComponent(sessionId);
-  return stripeRequest(`/checkout/sessions/${encoded}?expand[]=subscription`);
+  return stripeRequest(`/checkout/sessions/${encoded}?expand[]=subscription`,
+    customUi ? { apiVersion: '2025-03-31.basil' } : {});
 }
 
 function retrieveSubscription(subscriptionId) {

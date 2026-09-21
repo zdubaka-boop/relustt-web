@@ -1,0 +1,47 @@
+/* Oriano Moon's centered checkout composition, in RELUSTT violet and cyan.
+   Card inputs themselves are Stripe-hosted Elements, styled in payment.js. */
+:root { color-scheme: dark; font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #f5f2ff; background: #090714; }
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100svh; padding: 122px 20px max(48px, env(safe-area-inset-bottom)); background: radial-gradient(circle at 50% 24%, #7756cd26, transparent 34%), radial-gradient(circle at 50% 78%, #27bac813, transparent 38%), linear-gradient(180deg, #19102e 0%, #100b21 50%, #090714 100%); font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+body::before { content: ""; position: fixed; inset: 0; pointer-events: none; background-image: radial-gradient(circle, #baa5ff6b 0 1px, transparent 1.8px), radial-gradient(circle, #bcf8ff2e 0 1px, transparent 1.8px); background-size: 156px 156px, 232px 232px; background-position: 32px 42px, 96px 118px; opacity: .22; }
+[hidden] { display: none !important; }
+a { color: inherit; }
+button, input { font: inherit; }
+button, a, input { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 2px solid #65e3ef; outline-offset: 4px; }
+.checkout-close { position: fixed; top: max(18px, env(safe-area-inset-top)); right: max(18px, env(safe-area-inset-right)); z-index: 2; width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid #b39aff47; border-radius: 4px; background: #090714c2; color: #ebe3ffdc; font-size: 26px; line-height: 1; text-decoration: none; backdrop-filter: blur(10px); }
+.checkout-close:hover { border-color: #bda6ff; }
+.checkout-container { position: relative; width: min(100%, 780px); margin: 0 auto; }
+.checkout-hero { display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 46px; }
+.checkout-logo { margin-bottom: 24px; font-size: 28px; font-weight: 500; line-height: 1; letter-spacing: 6px; text-decoration: none; }
+.checkout-star { display: inline-block; width: 18px; height: 18px; background: #ac8cff; margin-bottom: 36px; clip-path: polygon(50% 0, 62% 37%, 100% 50%, 62% 63%, 50% 100%, 38% 63%, 0 50%, 38% 37%); filter: drop-shadow(0 0 16px #aa7dff6b); }
+.checkout-eyebrow { margin: 0 0 30px; font-size: 12px; font-weight: 700; letter-spacing: .3em; text-transform: uppercase; color: #c2aaf2; }
+.checkout-rule { width: 70px; height: 1px; margin-top: 28px; background: linear-gradient(90deg, transparent, #b098ffbf, transparent); }
+.checkout-total { margin: 22px 0 0; color: #e0d8ef; }
+.checkout-total strong { color: #7eeaf2; font-weight: 500; font-variant-numeric: tabular-nums; }
+.checkout-payment { min-height: 244px; }
+.checkout-loading { min-height: 244px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; color: #c3b9d6; font-size: 14px; }
+.checkout-spinner { width: 36px; height: 36px; border: 2px solid #aa8aff26; border-top-color: #af8eff; border-right-color: #65e3ef; border-radius: 50%; animation: spin 1s linear infinite; }
+.email-field { margin: 18px 0; }
+.email-field label { display: block; margin-bottom: 7px; color: #e0d8ef; font-size: 14px; font-weight: 500; }
+.email-field input { width: 100%; height: 46px; border: 1px solid #b39aff38; border-radius: 10px; padding: 10px 13px; background: #1c1532; color: #f5f2ff; font-size: 16px; box-shadow: none; }
+.email-field input::placeholder { color: #a79bbd; }
+.email-field input:focus { outline: none; border-color: #bda6ff; box-shadow: 0 0 0 2px #bda6ff1f; }
+.checkout-renewal { margin: 20px 0 16px; color: #c4b9d8; font-size: 14px; line-height: 1.6; text-align: center; }
+.checkout-submit { width: 100%; min-height: 54px; padding: 15px 18px; display: flex; align-items: center; justify-content: center; gap: 10px; border: 0; border-radius: 10px; background: linear-gradient(110deg, #b59aff 0%, #9d89f5 48%, #6cdeeb 100%); color: #160d2c; font-size: 16px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; box-shadow: 0 18px 48px #9767e226; cursor: pointer; }
+.checkout-submit:hover:not(:disabled) { filter: brightness(1.07); }
+.checkout-submit:disabled { opacity: .55; cursor: wait; }
+.checkout-terms { margin: 14px auto 0; max-width: 660px; color: #b8accd; font-size: 12px; line-height: 1.65; text-align: center; }
+.checkout-terms a { text-underline-offset: 3px; }
+.checkout-error { margin: 18px 0; color: #ffc0cd; font-size: 14px; line-height: 1.5; text-align: center; }
+.checkout-retry { display: block; margin: 16px auto; min-height: 44px; padding: 10px 20px; border: 1px solid #ad8ff780; border-radius: 8px; background: #21163a; color: #f5f2ff; cursor: pointer; }
+.checkout-footer { margin-top: 20px; text-align: center; }
+.trust-row { display: flex; justify-content: center; align-items: center; gap: 8px; margin: 0 0 10px; color: #c3b9d6; font-size: 13px; }
+.trust-row svg { color: #a995c5; }
+.trust-badges { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; }
+.badge { display: inline-flex; align-items: center; justify-content: center; min-width: 36px; height: 23px; padding: 2px 7px; border-radius: 3px; font-size: 12px; font-weight: 800; font-style: italic; line-height: 1; color: white; }
+.badge-visa { background: #1a1f71; }.badge-mc { background: white; color: #1a1f71; font-style: normal; }.badge-amex { background: #006fcf; }.badge-stripe { background: #635bff; font-style: normal; }
+.checkout-next { color: #b8accd; font-size: 12px; margin: 16px 0 0; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (max-width: 720px) { body { padding: 58px 18px max(42px, env(safe-area-inset-bottom)); } .checkout-logo { font-size: 26px; margin-bottom: 18px; } .checkout-hero { margin-bottom: 34px; } .checkout-star { margin-bottom: 26px; } .checkout-eyebrow { margin-bottom: 14px; } .checkout-rule { margin-top: 18px; } }
+@media (prefers-reduced-motion: reduce) { .checkout-spinner { animation: none; } }

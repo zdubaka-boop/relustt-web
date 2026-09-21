@@ -11,6 +11,13 @@ Vercel project: `rostweb`
 
 Supabase project: `bnycfsujwbusxyeqnrhf`
 
+**2026-09-22 checkout update — source only, not deployed:** the funnel now has an
+Oriano Moon-style, single-column payment page in RELUSTT violet/cyan, using
+Stripe-hosted secure Elements. Read [CHECKOUT_HANDOFF.md](CHECKOUT_HANDOFF.md)
+before deploying from another device. `STRIPE_PUBLISHABLE_KEY` is newly required
+for this page; existing prices, webhook, claims, login and iOS access are preserved.
+The September 21 production verification below predates this checkout redesign.
+
 ## Continue on another computer
 
 The current website work is on **`funnel-question-rebuild`**, not `main`:
@@ -22,7 +29,7 @@ npm ci
 npm test
 ```
 
-The matching quiz-profile iOS changes are on `codex/web-quiz-profile-sync`, based on the latest `main`, in
+The matching quiz-profile iOS changes from `codex/web-quiz-profile-sync` are now integrated into `main` in
 https://github.com/zdubaka-boop/unbound-price-blocking-backup.
 Environment secrets, CLI login sessions, `.vercel/`, and Supabase's local link
 are intentionally not committed. Authenticate on the new computer, relink the
@@ -56,6 +63,8 @@ Run `npm ci` to install the locked PGlite development dependency for SQL tests.
 | `animations/` | Original Lottie animation assets reused from the production iOS funnel |
 | `vendor/lottie.min.js` | Local Lottie web renderer; no runtime CDN dependency |
 | `checkout.html` / `checkout.js` | Legacy direct plan selection and Stripe Checkout handoff |
+| `payment.html` / `payment.css` / `payment.js` | Custom funnel payment page using Stripe Checkout Elements |
+| `api/checkout-details.js` | Cookie-protected checkout configuration; never puts client secrets in URLs |
 | `activate.html` / `activate.js` | Post-purchase Apple/Google login and claim |
 | `api/` | Checkout creation, purchase claiming, public config, Stripe webhook |
 | `server/` | Server-only Supabase, Stripe, cookie, and request helpers |
@@ -95,6 +104,8 @@ SUPABASE_URL
 SUPABASE_PUBLISHABLE_KEY
 SUPABASE_SERVICE_ROLE_KEY
 STRIPE_SECRET_KEY
+STRIPE_PUBLISHABLE_KEY
+STRIPE_CHECKOUT_UI
 STRIPE_WEBHOOK_SECRET
 STRIPE_PRICE_MONTHLY
 STRIPE_PRICE_YEARLY
@@ -102,6 +113,12 @@ STRIPE_PRICE_FUNNEL_MONTHLY
 WEB_PLAN_MONTHLY_LABEL
 WEB_PLAN_YEARLY_LABEL
 ```
+
+`STRIPE_PUBLISHABLE_KEY` must be the public `pk_…` key for the **same Stripe
+account and mode** as the secret key. Custom checkout is the funnel default;
+`STRIPE_CHECKOUT_UI=hosted` restores the previous hosted checkout on redeployment.
+It does not alter purchases or legacy direct plans. Do not deploy custom checkout
+without configuring the matching publishable key. Keep all secret keys server-only.
 
 The Stripe webhook endpoint is:
 
@@ -237,8 +254,7 @@ quiz API. The tracking migrations were applied on 2026-09-20; after web deployme
 journeys and conversion events; purchase activation links a frozen answer snapshot
 to the Auth account for iOS retrieval. Safe words and signatures remain memory-only.
 See [Tracking setup and reports](FUNNEL_TRACKING.md) and
-[Apple/Google configuration](SUPABASE_LOGIN_SETUP.md). These changes still require
-web deployment, provider configuration and a new iOS build. Local verification passed
+[Apple/Google configuration](SUPABASE_LOGIN_SETUP.md). Website deployment and provider configuration are complete per the current handoff; the combined iOS source still needs signed-device verification and distribution. Local verification passed
 31 tests and browser tracking checks; the live database smoke test passed with its
 synthetic records rolled back.
 
@@ -303,11 +319,8 @@ gitignored—run `vercel link` after cloning to reconnect.
 - Contact address on About / Privacy / Terms is a personal Gmail. Swap to a `@relustt.site` alias once mail forwarding is set up at GoDaddy.
 - Privacy Policy describes the AI coach sending messages off-device and lists analytics/crash reporting. **Confirm this matches what the app actually does** before relying on it.
 - Footer TikTok / Instagram / X icons are `href="#"` placeholders — handles not yet decided.
-- The live $29.50 monthly Price is created; checkout still needs its Vercel
-  environment variables and webhook endpoint configured.
-- Apple/Google login cannot run until both providers and redirect URLs are enabled in Supabase.
-- Database migrations are applied to `bnycfsujwbusxyeqnrhf`; deployment and
-  provider configuration still need to be completed before launching purchases.
+- Production Stripe variables, the webhook, Apple/Google providers and redirects are configured per `ACCESS_VERIFICATION_2026-09-21.md`. Their configuration and an unpaid Checkout smoke test are not proof of the complete paid/provider/iPhone journey.
+- Separate test-mode Preview configuration, real end-to-end acceptance checks and the matching iOS distribution remain outstanding. Database migrations are already applied to `bnycfsujwbusxyeqnrhf`; do not reset or recreate them.
 
 ## SEO
 

@@ -1,11 +1,24 @@
 # RELUSTT web funnel — cloud handoff
 
-Updated 2026-09-21. Start with the current status below; the dated September 16 record is historical.
+Updated 2026-09-22. Start with the new checkout handoff; the dated September 21
+production evidence and September 16 record predate the checkout redesign.
+
+## New checkout — 2026-09-22, not deployed
+
+The user requested Oriano Moon's checkout layout with RELUSTT colors, then
+explicitly requested **GitHub upload only; deployment from another computer**.
+See [CHECKOUT_HANDOFF.md](CHECKOUT_HANDOFF.md). New `payment.*` files implement
+the centered dark checkout using Stripe-hosted Elements. The existing create
+endpoint returns its in-site URL for funnel plans; legacy plans stay hosted.
+New `STRIPE_PUBLISHABLE_KEY` configuration is required. Prices, webhook,
+Supabase ownership/claims, OAuth and iOS RevenueCat billing are unchanged.
+No checkout redesign deployment, provider configuration change or purchase was
+performed. Finish the documented live/test-mode checks on the deploying device.
 
 ## Current continuation point — 2026-09-21
 
 - Website branch: `funnel-question-rebuild` in https://github.com/zdubaka-boop/relustt-web. Clone this branch and run `npm ci` then `npm test`; do not overlay an old ZIP onto current source.
-- iOS quiz-profile branch: `codex/web-quiz-profile-sync` in https://github.com/zdubaka-boop/unbound-price-blocking-backup, based on the newer native-onboarding work on `main`. Use that branch for the combined profile handoff. Build/sign on a Mac; source synchronization is not an app release.
+- iOS quiz-profile integration from `codex/web-quiz-profile-sync` is now incorporated into `main` in https://github.com/zdubaka-boop/unbound-price-blocking-backup. Use main for the combined release candidate. Native scoring matches the website; late profile responses are guarded against expired access. Build/sign and verify on a device; source synchronization is not an app release.
 - Live site: https://relustt.site. Deployment `dpl_4HXwHD4D74JLDVoLdaiXfzm5KTP4` is READY. It includes the latest tracking APIs and the corrected homepage tracking script tags.
 - Supabase: `bnycfsujwbusxyeqnrhf`; tracking migrations already applied. Both providers enabled. Site URL is `https://relustt.site`; redirects are `https://relustt.site/activate*` and `relustt://auth/callback`. Do not reset/recreate the project.
 - Vercel `rostweb`: production Stripe key, funnel monthly Price and webhook secret configured securely. Webhook `we_1UHtNXE0Q5KzSNmvCTLgxa1D` enabled. Never add credentials to Git or Obsidian. Preview/test-mode billing still needs separate configuration; legacy direct monthly/yearly checkout prices are separate from funnel pricing.

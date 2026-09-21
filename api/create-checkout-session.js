@@ -32,6 +32,12 @@ module.exports = async function handler(request, response) {
       return sendJson(response, 400, { error: 'Choose a valid plan.' });
     }
 
+    const customUi = isIntroductoryPlan && process.env.STRIPE_CHECKOUT_UI !== 'hosted';
+    // Check configuration before creating an unusable payment or purchase claim.
+    if (customUi && !/^pk_(live|test)_/.test(required('STRIPE_PUBLISHABLE_KEY'))) {
+      throw new ConfigurationError('STRIPE_PUBLISHABLE_KEY');
+    }
+
     const priceId = required(isIntroductoryPlan ? 'STRIPE_PRICE_FUNNEL_MONTHLY' : PRICE_ENV_BY_PLAN[plan]);
     const returnPathway = pathway === 'performance' ? '&path=performance' : '';
     const claim = newClaimCredentials();
@@ -52,6 +58,7 @@ module.exports = async function handler(request, response) {
     const origin = siteUrl();
     const checkoutSession = await createCheckoutSession({
       priceId,
+      customUi,
       ...(isIntroductoryPlan ? { introAmountCents: INTRO_AMOUNT_BY_PLAN[plan] } : {}),
       claimId: claim.id,
       successUrl: `${origin}/activate?session_id={CHECKOUT_SESSION_ID}`,
@@ -65,7 +72,11 @@ module.exports = async function handler(request, response) {
     });
 
     response.setHeader('Set-Cookie', serializeClaimCookie(claim.id, claim.secret));
-    return sendJson(response, 200, { url: checkoutSession.url });
+    return sendJson(response, 200, {
+      url: customUi
+        ? `${origin}/payment?session_id=${encodeURIComponent(checkoutSession.id)}${returnPathway}`
+        : checkoutSession.url,
+    });
   } catch (error) {
     if (error instanceof TrackingError) return sendJson(response, error.status, { error: 'Your quiz could not be saved. Please reload and try again.' });
     if (error instanceof ConfigurationError) {
