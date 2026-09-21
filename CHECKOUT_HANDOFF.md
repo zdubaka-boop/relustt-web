@@ -1,11 +1,27 @@
 # RELUSTT checkout — continue on another computer
 
 Updated 2026-09-22. **Deployed and verified with real Stripe fields.** Production
-deployment `dpl_2Z7vyzZJTM9XpfsRoxu1TJEBrJ1n` is published at https://relustt.site.
+deployment `dpl_32btNXN3BmSMY7ppWZcqFtLQuCFj` is published at https://relustt.site.
 The matching production publishable key and `STRIPE_CHECKOUT_UI=custom` are
 configured in Vercel. The September 21 checks predate this redesign.
 
 ## Wallet and copy follow-up — 2026-09-22
+
+Latest correction: `if_required` still rendered the country selector in the live
+Payment Element. Replaced only the card portion with standalone Stripe-hosted
+`cardNumber`, `cardExpiry`, and `cardCvc` Elements. No country/address field is
+collected or guessed. Stripe creates the PaymentMethod with the provided email;
+Checkout confirms that method ID using its documented `paymentMethod` option.
+Express Checkout remains on the same Session and existing verified activation
+path. Three-field readiness, tokenization errors, duplicate submissions, and
+amount changes during tokenization are handled. 40 tests and responsive mocked
+browser checks passed. Live DOM/screenshot confirmed no country selector,
+Apple Pay/Link buttons, loaded card fields, and no captured warnings/errors.
+No real card was entered or payment completed; the full paid card/wallet and
+3DS journeys remain unverified. This supersedes `if_required` below.
+
+SDK references: https://docs.stripe.com/js/payment_methods/create_payment_method
+and https://docs.stripe.com/js/custom_checkout/confirm.
 
 Later user-directed simplification: removed both the compact billing sentence
 and the “After payment, connect Apple or Google” footer from `/payment`.

@@ -16,7 +16,28 @@ const config = {
 };
 const mockStripe = `
 window.confirmCalls = 0;
-window.Stripe = () => ({initCheckout: () => {
+window.Stripe = () => ({
+  createPaymentMethod: async (options) => {
+    window.methodOptions=options;
+    await new Promise(resolve=>setTimeout(resolve,20));
+    return window.methodResult || {paymentMethod:{id:'pm_test_card'}};
+  },
+  elements: () => ({create: (type) => {
+    const handlers={}; let frame;
+    return {
+      on:(name,handler)=>{handlers[name]=handler;},
+      destroy:()=>frame?.remove(),
+      mount:(selector)=>{
+        frame=document.createElement('iframe');
+        frame.title='Mock Stripe '+type;
+        frame.style.cssText='width:100%;height:22px;border:0;display:block';
+        frame.srcdoc='<style>body{margin:0}input{width:100%;box-sizing:border-box;border:0;background:transparent;color:white;font:16px system-ui}</style><input aria-label="'+type+'" placeholder="'+({cardNumber:'1234 1234 1234 1234',cardExpiry:'MM / YY',cardCvc:'CVC'}[type])+'">';
+        document.querySelector(selector).replaceChildren(frame);
+        setTimeout(()=>handlers.ready?.(),20);
+      }
+    };
+  }}),
+  initCheckout: () => {
   const session = {currency:'usd', status:{type:'open'}, total:{total:{amount:'$5.00',minorUnitsAmount:500}}};
   let change;
   window.changeStripeSession = (value) => change(value);
@@ -92,8 +113,7 @@ window.Stripe = () => ({initCheckout: () => {
     await page.waitForFunction(()=>!document.getElementById('payButton').disabled);
     assert.equal(await page.locator('#checkoutTotal').textContent(),'$5.00');
     await page.waitForFunction(()=>!document.getElementById('expressCheckout').hidden);
-    assert.equal(await page.evaluate(()=>window.cardOptions.terms.card),'never');
-    assert.equal(await page.evaluate(()=>window.cardOptions.wallets.link),'never','Link uses the express button without a duplicate signup form');
+    assert.equal(await page.locator('#paymentElement iframe').count(),3,'All card details remain Stripe-hosted');
     assert.equal(await page.evaluate(()=>window.walletOptions.paymentMethods.link),'auto');
     assert.match(await page.locator('#closeCheckout').getAttribute('href'),/path=performance/);
     assert.equal(await page.locator('input').count(),1,'Only email is collected outside the payment iframe');
@@ -113,6 +133,14 @@ window.Stripe = () => ({initCheckout: () => {
     await page.waitForFunction(()=>document.getElementById('checkoutError').textContent.includes('declined'));
     assert.equal(await page.evaluate(()=>window.confirmCalls),1,'Double-submit is suppressed');
     assert.equal(await page.locator('#payButton').isEnabled(),true,'A failed payment can be retried');
+    assert.equal(await page.evaluate(()=>window.lastConfirmOptions.paymentMethod),'pm_test_card','Tokenized card is passed to Checkout confirmation');
+    assert.equal(await page.evaluate(()=>window.methodOptions.billing_details.email),'checkout-fixture@example.test');
+    assert.equal(await page.evaluate(()=>window.methodOptions.billing_details.address),undefined,'No invented billing country');
+    await page.evaluate(()=>{window.methodResult={error:{message:'Your card number is incomplete.'}};});
+    await page.locator('#payButton').click();
+    await page.waitForFunction(()=>document.getElementById('checkoutError').textContent.includes('incomplete'));
+    assert.equal(await page.evaluate(()=>window.confirmCalls),1,'Invalid card never confirms the Checkout Session');
+    await page.evaluate(()=>{window.methodResult=null;});
     await page.locator('#paymentEmail').fill('');
     await page.evaluate(()=>{
       window.emitWalletEvent('confirm',{expressPaymentType:'link'});

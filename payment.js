@@ -7,7 +7,8 @@
   back.searchParams.set('cancelled', '1');
   if (params.get('path') === 'performance') back.searchParams.set('path', 'performance');
   $('closeCheckout').href = back.pathname + back.search;
-  let checkout, actions, paymentElement, expressElement, details;
+  let stripe, checkout, actions, cardNumber, expressElement, details;
+  let cardFields = [];
   let loading = false, submitting = false, paymentReady = false, validTotal = false;
 
   function error(message) {
@@ -51,9 +52,10 @@
       details = await response.json();
       if (!response.ok) throw new Error(details.error || 'Your payment form could not load.');
       if (details.status === 'complete') { location.assign(details.activationUrl); return; }
-      paymentElement?.destroy();
+      cardFields.forEach(field => field.destroy());
+      cardFields = [];
       expressElement?.destroy();
-      const stripe = Stripe(details.publishableKey);
+      stripe = Stripe(details.publishableKey);
       checkout = stripe.initCheckout({
         clientSecret: details.clientSecret,
         elementsOptions: {
@@ -80,19 +82,37 @@
       displaySession(actions.getSession());
       const activeCheckout = checkout;
       checkout.on('change', session => { if (checkout === activeCheckout) displaySession(session); });
-      // Link has its own express button; avoid a second Link signup form here.
-      paymentElement = checkout.createPaymentElement({
-        layout: 'tabs', terms: { card: 'never' }, wallets: { link: 'never' },
-        fields: { billingDetails: { address: 'if_required' } },
-      });
-      paymentElement.on('ready', () => { paymentReady = true; updateButton(); });
-      paymentElement.on('loaderror', () => {
-        paymentReady = false; updateButton();
-        error('The secure card fields could not load. Please check your connection and try again.');
-        $('retryButton').hidden = false;
-      });
       $('paymentForm').hidden = false;
-      paymentElement.mount('#paymentElement');
+      // Standalone Stripe card fields don't require a billing-country selector.
+      // Stripe still hosts every sensitive input and creates the PaymentMethod.
+      const cardElements = stripe.elements();
+      const cardStyle = {
+        base: { color: '#f5f2ff', fontFamily: 'Inter, system-ui, sans-serif', fontSize: '16px',
+          lineHeight: '22px', '::placeholder': { color: '#a79bbd' } },
+        invalid: { color: '#ffc0cd' },
+      };
+      const readyFields = new Set();
+      for (const [type, id] of [['cardNumber', 'cardNumber'], ['cardExpiry', 'cardExpiry'], ['cardCvc', 'cardCvc']]) {
+        const field = cardElements.create(type, { style: cardStyle, ...(type === 'cardNumber' ? { showIcon: true } : {}) });
+        cardFields.push(field);
+        if (type === 'cardNumber') cardNumber = field;
+        field.on('ready', () => {
+          if (checkout !== activeCheckout) return;
+          readyFields.add(type); paymentReady = readyFields.size === 3; updateButton();
+        });
+        field.on('focus', () => $(id).classList.add('is-focused'));
+        field.on('blur', () => $(id).classList.remove('is-focused'));
+        field.on('change', event => {
+          $(id).classList.toggle('is-invalid', Boolean(event.error));
+          if (event.error) error(event.error.message);
+        });
+        field.on('loaderror', () => {
+          readyFields.delete(type); paymentReady = false; updateButton();
+          error('The secure card fields could not load. Please check your connection and try again.');
+          $('retryButton').hidden = false;
+        });
+        field.mount('#' + id);
+      }
       // Stripe owns wallet eligibility and collects the wallet email. A wallet
       // failure must never prevent the independent card form from loading.
       try {
@@ -132,6 +152,16 @@
     if (submitting || !actions || !validTotal) return;
     submitting = true; error(''); updateButton();
     try {
+      if (!options.expressCheckoutConfirmEvent) {
+        const method = await stripe.createPaymentMethod({
+          type: 'card', card: cardNumber, billing_details: { email: options.email },
+        });
+        if (method.error) throw new Error(method.error.message);
+        if (!method.paymentMethod?.id) throw new Error('Your card could not be verified. Please try again.');
+        // The Session can change while Stripe validates/tokenizes the card.
+        if (!validTotal) throw new Error('The checkout total changed. Return to your plan to verify the price before paying.');
+        options = { ...options, paymentMethod: method.paymentMethod.id };
+      }
       const result = await actions.confirm(options);
       if (result.type === 'error') throw new Error(result.error.message);
       // Never unlock access in the browser. The existing activation endpoint
